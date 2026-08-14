@@ -12,7 +12,7 @@ Application Laravel de gestion d'appartements, de chambres en colocation et du p
 
 Depuis la racine du projet :
 
-```powershell
+```cmd
 php composer.phar install --no-scripts
 php artisan key:generate
 php artisan migrate
@@ -31,11 +31,17 @@ php artisan db:seed
 
 La page de connexion est disponible sur http://localhost:8000/login. L'inscription publique est désactivée ; les comptes locataires seront ajoutés ultérieurement par un processus dédié.
 
+## Back-office d'administration
+
+Le compte ayant le rôle `admin` peut accéder à http://localhost:8000/admin pour créer les immeubles et les logements. Les permissions sont préparées pour les rôles `admin`, `gestionnaire` et `locataire` ; seul le rôle `admin` peut créer les éléments dans cette première version.
+
+Les appartements et parkings doivent être rattachés à un immeuble. Une maison possède sa propre adresse.
+
 ## Exécution avec Docker Compose
 
 Copier `.env.example` vers `.env`, définir `APP_KEY` avec `php artisan key:generate`, puis lancer :
 
-```powershell
+```cmd
 docker compose up --build -d
 ```
 
@@ -43,7 +49,7 @@ Le fichier SQLite est situé sur le host, à l'emplacement défini par `SQLITE_D
 
 Pour arrêter les conteneurs sans supprimer les données :
 
-```powershell
+```cmd
 docker compose down
 ```
 
