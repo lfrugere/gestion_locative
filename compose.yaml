@@ -1,0 +1,25 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT:-8000}:80"
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_KEY: ${APP_KEY:?APP_KEY doit être défini dans le fichier .env}
+      APP_URL: ${APP_URL:-http://localhost:8000}
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /var/lib/gestion-locative/database.sqlite
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+    volumes:
+      - sqlite_data:/var/lib/gestion-locative
+      - storage_data:/var/www/html/storage
+    restart: unless-stopped
+
+volumes:
+  sqlite_data:
+  storage_data:
