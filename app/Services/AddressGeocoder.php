@@ -8,10 +8,10 @@ use Throwable;
 
 class AddressGeocoder
 {
-    public function geocode(Address $address): void
+    public function geocode(Address $address): bool
     {
         if (app()->environment('testing')) {
-            return;
+            return false;
         }
 
         try {
@@ -28,18 +28,22 @@ class AddressGeocoder
                     'limit' => 1,
                 ]);
         } catch (Throwable) {
-            return;
+            return false;
         }
 
-        if (! $response->successful() || ! $response->json('0')) {
-            return;
+        $results = $response->json();
+        $result = is_array($results) ? ($results[0] ?? null) : null;
+
+        if (! $response->successful() || ! is_array($result) || ! isset($result['lat'], $result['lon'])) {
+            return false;
         }
 
-        $result = $response->json('0');
         $address->update([
             'latitude' => $result['lat'],
             'longitude' => $result['lon'],
             'geocoded_at' => now(),
         ]);
+
+        return true;
     }
 }

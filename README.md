@@ -45,6 +45,21 @@ Les adresses sont géocodées automatiquement lors de leur création ou modifica
 php artisan addresses:geocode
 ```
 
+Pour vérifier les coordonnées enregistrées :
+
+```cmd
+php artisan tinker --execute="dump(App\Models\Address::first()->latitude, App\Models\Address::first()->longitude, App\Models\Address::first()->geocoded_at);"
+```
+
+Si PHP affiche `cURL error 60`, télécharger le certificat CA depuis `https://curl.se/ca/cacert.pem`, puis renseigner ces deux lignes dans le `php.ini` utilisé par `php --ini` :
+
+```ini
+curl.cainfo="C:\Tools\DEV\dev\php\cacert.pem"
+openssl.cafile="C:\Tools\DEV\dev\php\cacert.pem"
+```
+
+Fermer puis rouvrir le terminal, et relancer `php artisan addresses:geocode --force`.
+
 ## Exécution avec Docker Compose
 
 Copier `.env.example` vers `.env`, définir `APP_KEY` avec `php artisan key:generate`, puis lancer :

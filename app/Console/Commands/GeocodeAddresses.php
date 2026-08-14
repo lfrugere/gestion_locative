@@ -8,9 +8,9 @@ use Illuminate\Console\Command;
 
 class GeocodeAddresses extends Command
 {
-    protected $signature = 'addresses:geocode {--force : Recalculer les coordonnées existantes}';
+    protected $signature = 'addresses:geocode {--force : Recalculer les coordonnees existantes}';
 
-    protected $description = 'Géocoder les adresses utilisées par les immeubles et les maisons';
+    protected $description = 'Geocoder les adresses utilisees par les immeubles et les maisons';
 
     public function handle(AddressGeocoder $geocoder): int
     {
@@ -21,11 +21,14 @@ class GeocodeAddresses extends Command
 
         $addresses = $query->get();
         foreach ($addresses as $address) {
-            $geocoder->geocode($address);
-            $this->line("Adresse {$address->id} traitée.");
+            if ($geocoder->geocode($address)) {
+                $this->info("Adresse {$address->id} geocodee : {$address->latitude}, {$address->longitude}.");
+            } else {
+                $this->warn("Adresse {$address->id} non geocodee : aucun resultat ou service indisponible.");
+            }
         }
 
-        $this->info("{$addresses->count()} adresse(s) traitée(s).");
+        $this->info("{$addresses->count()} adresse(s) traitee(s).");
 
         return self::SUCCESS;
     }
