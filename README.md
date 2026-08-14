@@ -29,7 +29,7 @@ Copier `.env.example` vers `.env`, définir `APP_KEY` avec `php artisan key:gene
 docker compose up --build -d
 ```
 
-Le fichier SQLite local `database/database.sqlite` est utilisé par l'application, y compris dans Docker. Les fichiers générés sont conservés dans le volume `storage_data`.
+Le fichier SQLite est situé sur le host, à l'emplacement défini par `SQLITE_DATABASE_PATH` dans `.env` (par défaut `./database/database.sqlite`). Compose le monte directement dans le conteneur ; aucun volume Docker n'est utilisé pour la base. Les fichiers générés sont conservés dans le volume `storage_data`.
 
 Pour arrêter les conteneurs sans supprimer les données :
 

@@ -17,7 +17,7 @@ services:
       CACHE_STORE: database
       QUEUE_CONNECTION: database
     volumes:
-      - ./database/database.sqlite:/var/www/html/database/database.sqlite
+      - ${SQLITE_DATABASE_PATH:-./database/database.sqlite}:/var/www/html/database/database.sqlite
       - storage_data:/var/www/html/storage
     restart: unless-stopped
 
