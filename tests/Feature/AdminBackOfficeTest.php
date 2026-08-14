@@ -6,8 +6,10 @@ use App\Models\User;
 use App\Models\Address;
 use App\Models\Building;
 use App\Models\Property;
+use App\Models\Media;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Contracts\Auth\Access\Gate;
+use Illuminate\Http\UploadedFile;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -214,6 +216,62 @@ class AdminBackOfficeTest extends TestCase
             'address_id' => null,
         ]);
         $this->assertDatabaseMissing('addresses', ['id' => $address->id]);
+    }
+
+    public function test_admin_can_upload_tag_and_manage_media_on_a_property(): void
+    {
+        $admin = $this->admin();
+        $property = Property::create([
+            'reference' => 'MEDIA-01',
+            'name' => 'Bien media',
+            'type' => Property::TYPE_HOUSE,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.properties.media.store', $property), [
+                'kind' => Media::KIND_PHOTO,
+                'file' => UploadedFile::fake()->create('facade.jpg', 100, 'image/jpeg'),
+            ])
+            ->assertRedirect(route('admin.properties.show', $property));
+
+        $photo = Media::firstOrFail();
+        $this->assertTrue($photo->is_primary);
+
+        $this->actingAs($admin)
+            ->post(route('admin.properties.media.store', $property), [
+                'kind' => Media::KIND_PHOTO,
+                'file' => UploadedFile::fake()->create('salon.jpg', 100, 'image/jpeg'),
+            ])
+            ->assertRedirect(route('admin.properties.show', $property));
+
+        $secondPhoto = Media::where('kind', Media::KIND_PHOTO)->where('id', '!=', $photo->id)->firstOrFail();
+        $this->assertSame(1, Media::where('kind', Media::KIND_PHOTO)->where('is_primary', true)->count());
+
+        $this->actingAs($admin)
+            ->post(route('admin.properties.media.store', $property), [
+                'kind' => Media::KIND_DOCUMENT,
+                'file' => UploadedFile::fake()->create('diagnostic.pdf', 100, 'application/pdf'),
+                'display_name' => 'Diagnostic énergétique',
+                'tags' => 'diagnostic, énergie',
+            ])
+            ->assertRedirect(route('admin.properties.show', $property));
+
+        $document = Media::where('kind', Media::KIND_DOCUMENT)->firstOrFail();
+        $this->assertSame('Diagnostic énergétique', $document->display_name);
+        $this->assertDatabaseHas('tags', ['name' => 'diagnostic']);
+        $this->assertDatabaseHas('tags', ['name' => 'énergie']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.media.download', $document))
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->delete(route('admin.media.destroy', $photo))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('media', ['id' => $photo->id]);
+        $this->assertDatabaseHas('media', ['id' => $secondPhoto->id, 'is_primary' => true]);
     }
 
     private function admin(): User

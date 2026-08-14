@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Address;
 use App\Models\Building;
+use App\Services\AddressGeocoder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,7 @@ class BuildingController extends Controller
     public function index(): View
     {
         return view('admin.buildings.index', [
-            'buildings' => Building::with('address')
+            'buildings' => Building::with(['address', 'media' => fn ($query) => $query->where('kind', 'photo')->where('is_primary', true)])
                 ->withCount('properties')
                 ->orderBy('name')
                 ->get(),
@@ -31,7 +32,7 @@ class BuildingController extends Controller
     public function show(Building $building): View
     {
         return view('admin.buildings.show', [
-            'building' => $building->load(['address', 'properties']),
+            'building' => $building->load(['address', 'properties', 'media.tags']),
         ]);
     }
 
@@ -42,14 +43,14 @@ class BuildingController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, AddressGeocoder $geocoder): RedirectResponse
     {
-        return $this->save($request);
+        return $this->save($request, null, $geocoder);
     }
 
-    public function update(Request $request, Building $building): RedirectResponse
+    public function update(Request $request, Building $building, AddressGeocoder $geocoder): RedirectResponse
     {
-        return $this->save($request, $building);
+        return $this->save($request, $building, $geocoder);
     }
 
     public function destroy(Building $building): RedirectResponse
@@ -69,7 +70,7 @@ class BuildingController extends Controller
             ->with('success', 'L’immeuble a été supprimé.');
     }
 
-    private function save(Request $request, ?Building $building = null): RedirectResponse
+    private function save(Request $request, ?Building $building, AddressGeocoder $geocoder): RedirectResponse
     {
         $validated = $request->validate([
             'reference' => [
@@ -85,7 +86,8 @@ class BuildingController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        DB::transaction(function () use ($validated, $building): void {
+        $addressId = $building?->address_id;
+        DB::transaction(function () use ($validated, $building, &$addressId): void {
             if ($building) {
                 $building->address()->update($validated['address']);
                 $building->update([
@@ -98,6 +100,7 @@ class BuildingController extends Controller
             }
 
             $address = Address::create($validated['address']);
+            $addressId = $address->id;
             Building::create([
                 'reference' => $validated['reference'],
                 'name' => $validated['name'],
@@ -105,6 +108,10 @@ class BuildingController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
         });
+
+        if ($addressId) {
+            $geocoder->geocode(Address::findOrFail($addressId));
+        }
 
         return to_route('admin.buildings.index')->with(
             'success',

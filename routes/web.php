@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\BuildingController;
 use App\Http\Controllers\Admin\PropertyController;
+use App\Http\Controllers\Admin\MediaController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -19,6 +20,8 @@ Route::middleware(['auth', 'permission:access admin'])
     ->name('admin.')
     ->group(function () {
         Route::view('/', 'admin.dashboard')->name('dashboard');
+        Route::get('/media/{media}/download', [MediaController::class, 'download'])
+            ->name('media.download');
 
         Route::middleware('permission:view buildings')->group(function () {
             Route::get('/buildings', [BuildingController::class, 'index'])
@@ -42,6 +45,9 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::delete('/buildings/{building}', [BuildingController::class, 'destroy'])
                 ->whereNumber('building')
                 ->name('buildings.destroy');
+            Route::post('/buildings/{building}/media', [MediaController::class, 'storeBuilding'])
+                ->whereNumber('building')
+                ->name('buildings.media.store');
         });
 
         Route::middleware('permission:view properties')->group(function () {
@@ -66,5 +72,14 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::delete('/properties/{property}', [PropertyController::class, 'destroy'])
                 ->whereNumber('property')
                 ->name('properties.destroy');
+            Route::post('/properties/{property}/media', [MediaController::class, 'storeProperty'])
+                ->whereNumber('property')
+                ->name('properties.media.store');
+        });
+
+        Route::middleware('permission:manage buildings|manage properties')->group(function () {
+            Route::put('/media/{media}', [MediaController::class, 'update'])->name('media.update');
+            Route::post('/media/{media}/primary', [MediaController::class, 'setPrimary'])->name('media.primary');
+            Route::delete('/media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
         });
     });

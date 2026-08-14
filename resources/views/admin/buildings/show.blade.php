@@ -12,6 +12,8 @@
         <p>{{ $building->address->line1 }}@if($building->address->line2), {{ $building->address->line2 }}@endif<br>{{ $building->address->postal_code }} {{ $building->address->city }}<br>{{ $building->address->country }}</p>
         @if ($building->notes)<h2>Notes</h2><p>{{ $building->notes }}</p>@endif
     </div>
+    @include('admin._map', ['address' => $building->address])
+    @include('admin._media', ['media' => $building->media, 'managePermission' => 'manage buildings', 'uploadRoute' => route('admin.buildings.media.store', $building)])
     <div class="card">
         <h2>Biens rattachés</h2>
         @if ($building->properties->isEmpty())

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Address;
 use App\Models\Building;
 use App\Models\Property;
+use App\Services\AddressGeocoder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ class PropertyController extends Controller
     public function index(): View
     {
         return view('admin.properties.index', [
-            'properties' => Property::with(['building', 'address'])
+            'properties' => Property::with(['building', 'address', 'media' => fn ($query) => $query->where('kind', 'photo')->where('is_primary', true)])
                 ->orderBy('reference')
                 ->get(),
         ]);
@@ -33,7 +34,7 @@ class PropertyController extends Controller
     public function show(Property $property): View
     {
         return view('admin.properties.show', [
-            'property' => $property->load(['building.address', 'address']),
+            'property' => $property->load(['building.address', 'address', 'media.tags']),
         ]);
     }
 
@@ -45,14 +46,14 @@ class PropertyController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, AddressGeocoder $geocoder): RedirectResponse
     {
-        return $this->save($request);
+        return $this->save($request, null, $geocoder);
     }
 
-    public function update(Request $request, Property $property): RedirectResponse
+    public function update(Request $request, Property $property, AddressGeocoder $geocoder): RedirectResponse
     {
-        return $this->save($request, $property);
+        return $this->save($request, $property, $geocoder);
     }
 
     public function destroy(Property $property): RedirectResponse
@@ -67,7 +68,7 @@ class PropertyController extends Controller
             ->with('success', 'Le bien a été supprimé.');
     }
 
-    private function save(Request $request, ?Property $property = null): RedirectResponse
+    private function save(Request $request, ?Property $property, AddressGeocoder $geocoder): RedirectResponse
     {
         $type = $request->string('type')->toString();
         $requiresBuilding = in_array($type, [
@@ -98,7 +99,8 @@ class PropertyController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        DB::transaction(function () use ($validated, $type, $property): void {
+        $addressId = null;
+        DB::transaction(function () use ($validated, $type, $property, &$addressId): void {
             $addressId = null;
 
             if ($type === Property::TYPE_HOUSE) {
@@ -132,6 +134,10 @@ class PropertyController extends Controller
                 Property::create($attributes);
             }
         });
+
+        if ($addressId) {
+            $geocoder->geocode(Address::findOrFail($addressId));
+        }
 
         return to_route('admin.properties.index')->with(
             'success',

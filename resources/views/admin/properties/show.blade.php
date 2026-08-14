@@ -21,6 +21,8 @@
         @endif
         @if ($property->notes)<h2>Notes</h2><p>{{ $property->notes }}</p>@endif
     </div>
+    @include('admin._map', ['address' => $property->building?->address ?? $property->address])
+    @include('admin._media', ['media' => $property->media, 'managePermission' => 'manage properties', 'uploadRoute' => route('admin.properties.media.store', $property)])
     @can('manage properties')
         <form method="POST" action="{{ route('admin.properties.destroy', $property) }}" onsubmit="return confirm('Supprimer ce bien ?')">
             @csrf @method('DELETE')

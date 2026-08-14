@@ -45,6 +45,19 @@
             .link-button { padding: 0; border: 0; color: #b42318; background: transparent; cursor: pointer; font: inherit; }
             .button.danger { background: #b42318; }
             .button.danger:hover { background: #912018; }
+            .list-thumb { width: 56px; height: 56px; border-radius: 6px; object-fit: cover; }
+            .media-card { margin-top: 24px; }
+            .photo-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+            .photo-item { padding: 10px; border: 1px solid #eaecf0; border-radius: 10px; }
+            .photo-item.primary { border-color: #2a9d8f; }
+            .photo-item img { width: 100%; height: 120px; border-radius: 6px; object-fit: cover; }
+            .photo-item span { display: block; margin: 8px 0; font-size: .85rem; }
+            .attachment-row { display: grid; gap: 10px; align-items: center; grid-template-columns: minmax(160px, 1fr) auto auto; padding: 12px 0; border-bottom: 1px solid #eaecf0; }
+            .attachment-edit { display: flex; flex-wrap: wrap; gap: 8px; grid-column: 1 / -1; }
+            .attachment-edit input { flex: 1 1 180px; }
+            .tags { padding: 3px 8px; border-radius: 10px; color: #475467; background: #f2f4f7; font-size: .8rem; }
+            .upload-form { margin-top: 24px; padding-top: 20px; border-top: 1px solid #eaecf0; }
+            .address-map { height: 280px; border-radius: 10px; }
             .hint { margin: 6px 0 0; color: #667085; font-size: .82rem; }
             @media (max-width: 720px) { .admin-shell { display: block; } .admin-nav { padding: 16px; } .admin-brand { margin-bottom: 12px; } .admin-nav a { display: inline-block; } .admin-nav form { display: inline-block; margin: 0; } .admin-main { padding: 28px 18px; } .form-grid { grid-template-columns: 1fr; } .form-field.full { grid-column: auto; } .admin-header { align-items: stretch; flex-direction: column; } }
         </style>

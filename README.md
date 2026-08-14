@@ -37,6 +37,14 @@ Le compte ayant le rôle `admin` peut accéder à http://localhost:8000/admin po
 
 Les appartements et parkings doivent être rattachés à un immeuble. Une maison possède sa propre adresse.
 
+Les fiches immeubles et biens acceptent plusieurs photos et pièces jointes. Une photo principale est utilisée dans les listes ; les pièces jointes peuvent être renommées et taguées. Les fichiers sont stockés sur le disque privé et servis uniquement après authentification.
+
+Les adresses sont géocodées automatiquement lors de leur création ou modification. Pour géocoder les adresses existantes :
+
+```cmd
+php artisan addresses:geocode
+```
+
 ## Exécution avec Docker Compose
 
 Copier `.env.example` vers `.env`, définir `APP_KEY` avec `php artisan key:generate`, puis lancer :
