@@ -21,6 +21,16 @@ php artisan serve
 
 L'application est alors disponible sur http://localhost:8000.
 
+## Authentification locale
+
+Renseigner les variables `ADMIN_NAME`, `ADMIN_EMAIL` et `ADMIN_PASSWORD` dans `.env`, puis créer le compte administrateur :
+
+```cmd
+php artisan db:seed
+```
+
+La page de connexion est disponible sur http://localhost:8000/login. L'inscription publique est désactivée ; les comptes locataires seront ajoutés ultérieurement par un processus dédié.
+
 ## Exécution avec Docker Compose
 
 Copier `.env.example` vers `.env`, définir `APP_KEY` avec `php artisan key:generate`, puis lancer :
