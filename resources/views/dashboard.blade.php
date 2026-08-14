@@ -10,6 +10,10 @@
             <h1>Tableau de bord</h1>
             <p>Bienvenue, {{ auth()->user()->name }}.</p>
 
+            @can('access admin')
+                <p><a href="{{ route('admin.dashboard') }}">Accéder à l’administration</a></p>
+            @endcan
+
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit">Se déconnecter</button>
