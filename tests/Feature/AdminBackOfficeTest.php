@@ -3,6 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\Address;
+use App\Models\Building;
+use App\Models\Property;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Spatie\Permission\PermissionRegistrar;
@@ -105,11 +108,135 @@ class AdminBackOfficeTest extends TestCase
             ->assertSessionHasErrors('building_id');
     }
 
+    public function test_admin_can_view_update_and_delete_a_property(): void
+    {
+        $admin = $this->admin();
+        $building = $this->createBuilding();
+        $property = Property::create([
+            'reference' => 'APPART-01',
+            'name' => 'Appartement test',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.properties.show', $property))
+            ->assertOk()
+            ->assertSee($property->reference);
+
+        $this->actingAs($admin)
+            ->put(route('admin.properties.update', $property), [
+                'reference' => 'APPART-MODIFIE',
+                'name' => 'Appartement modifie',
+                'type' => Property::TYPE_APARTMENT,
+                'building_id' => $building->id,
+                'status' => 'inactive',
+            ])
+            ->assertRedirect('/admin/properties');
+
+        $this->assertDatabaseHas('properties', [
+            'id' => $property->id,
+            'reference' => 'APPART-MODIFIE',
+            'status' => 'inactive',
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.properties.destroy', $property))
+            ->assertRedirect('/admin/properties');
+
+        $this->assertDatabaseMissing('properties', ['id' => $property->id]);
+    }
+
+    public function test_building_with_properties_cannot_be_deleted(): void
+    {
+        $admin = $this->admin();
+        $building = $this->createBuilding();
+        Property::create([
+            'reference' => 'APPART-02',
+            'name' => 'Appartement test',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.buildings.destroy', $building))
+            ->assertRedirect('/admin/buildings')
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('buildings', ['id' => $building->id]);
+    }
+
+    public function test_property_form_contains_dynamic_address_and_building_sections(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.properties.create'));
+
+        $response->assertOk()
+            ->assertSee('id="building-fields"', false)
+            ->assertSee('id="address-fields"', false)
+            ->assertSee('function updatePropertyFields', false);
+    }
+
+    public function test_changing_a_house_to_an_apartment_detaches_and_deletes_its_address(): void
+    {
+        $admin = $this->admin();
+        $building = $this->createBuilding();
+        $address = Address::create([
+            'line1' => '10 avenue de la Maison',
+            'postal_code' => '69001',
+            'city' => 'Lyon',
+            'country' => 'FR',
+        ]);
+        $property = Property::create([
+            'reference' => 'MAISON-TRANSITION',
+            'name' => 'Maison à transformer',
+            'type' => Property::TYPE_HOUSE,
+            'address_id' => $address->id,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.properties.update', $property), [
+                'reference' => $property->reference,
+                'name' => $property->name,
+                'type' => Property::TYPE_APARTMENT,
+                'building_id' => $building->id,
+                'status' => 'active',
+            ])
+            ->assertRedirect('/admin/properties');
+
+        $this->assertDatabaseHas('properties', [
+            'id' => $property->id,
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'address_id' => null,
+        ]);
+        $this->assertDatabaseMissing('addresses', ['id' => $address->id]);
+    }
+
     private function admin(): User
     {
         $user = User::factory()->create();
         $user->assignRole('admin');
 
         return $user;
+    }
+
+    private function createBuilding(): Building
+    {
+        $address = Address::create([
+            'line1' => '1 rue du Test',
+            'postal_code' => '75001',
+            'city' => 'Paris',
+            'country' => 'FR',
+        ]);
+
+        return Building::create([
+            'reference' => 'IMMEUBLE-TEST',
+            'name' => 'Immeuble test',
+            'address_id' => $address->id,
+        ]);
     }
 }

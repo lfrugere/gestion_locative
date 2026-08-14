@@ -40,6 +40,11 @@
             input:focus, select:focus, textarea:focus { border-color: #2a9d8f; outline: 3px solid rgba(42, 157, 143, .14); }
             .errors { margin-bottom: 20px; padding: 12px 15px; border-radius: 9px; color: #b42318; background: #fff3f2; }
             .form-actions { display: flex; gap: 10px; margin-top: 24px; }
+            .actions { display: flex; flex-wrap: wrap; gap: 10px; white-space: nowrap; }
+            .actions form { display: inline; }
+            .link-button { padding: 0; border: 0; color: #b42318; background: transparent; cursor: pointer; font: inherit; }
+            .button.danger { background: #b42318; }
+            .button.danger:hover { background: #912018; }
             .hint { margin: 6px 0 0; color: #667085; font-size: .82rem; }
             @media (max-width: 720px) { .admin-shell { display: block; } .admin-nav { padding: 16px; } .admin-brand { margin-bottom: 12px; } .admin-nav a { display: inline-block; } .admin-nav form { display: inline-block; margin: 0; } .admin-main { padding: 28px 18px; } .form-grid { grid-template-columns: 1fr; } .form-field.full { grid-column: auto; } .admin-header { align-items: stretch; flex-direction: column; } }
         </style>
@@ -66,6 +71,9 @@
             <main class="admin-main">
                 @if (session('success'))
                     <div class="flash" role="status">{{ session('success') }}</div>
+                @endif
+                @if (session('error'))
+                    <div class="errors" role="alert">{{ session('error') }}</div>
                 @endif
                 @yield('content')
             </main>

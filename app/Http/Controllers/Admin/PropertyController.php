@@ -30,7 +30,44 @@ class PropertyController extends Controller
         ]);
     }
 
+    public function show(Property $property): View
+    {
+        return view('admin.properties.show', [
+            'property' => $property->load(['building.address', 'address']),
+        ]);
+    }
+
+    public function edit(Property $property): View
+    {
+        return view('admin.properties.edit', [
+            'property' => $property->load('address'),
+            'buildings' => Building::orderBy('name')->get(),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
+    {
+        return $this->save($request);
+    }
+
+    public function update(Request $request, Property $property): RedirectResponse
+    {
+        return $this->save($request, $property);
+    }
+
+    public function destroy(Property $property): RedirectResponse
+    {
+        DB::transaction(function () use ($property): void {
+            $address = $property->address;
+            $property->delete();
+            $address?->delete();
+        });
+
+        return to_route('admin.properties.index')
+            ->with('success', 'Le bien a été supprimé.');
+    }
+
+    private function save(Request $request, ?Property $property = null): RedirectResponse
     {
         $type = $request->string('type')->toString();
         $requiresBuilding = in_array($type, [
@@ -39,13 +76,14 @@ class PropertyController extends Controller
         ], true);
 
         $validated = $request->validate([
-            'reference' => ['required', 'string', 'max:50', 'unique:properties,reference'],
+            'reference' => [
+                'required', 'string', 'max:50',
+                Rule::unique('properties', 'reference')->ignore($property),
+            ],
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', Rule::in(Property::TYPES)],
             'building_id' => [
-                'nullable',
-                'integer',
-                'exists:buildings,id',
+                'nullable', 'integer', 'exists:buildings,id',
                 Rule::requiredIf($requiresBuilding),
                 Rule::prohibitedIf($type === Property::TYPE_HOUSE),
             ],
@@ -60,14 +98,23 @@ class PropertyController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        DB::transaction(function () use ($validated, $type): void {
+        DB::transaction(function () use ($validated, $type, $property): void {
             $addressId = null;
 
             if ($type === Property::TYPE_HOUSE) {
-                $addressId = Address::create($validated['address'])->id;
+                if ($property?->address) {
+                    $property->address()->update($validated['address']);
+                    $addressId = $property->address_id;
+                } else {
+                    $addressId = Address::create($validated['address'])->id;
+                }
+            } elseif ($property?->address) {
+                $oldAddress = $property->address;
+                $property->update(['address_id' => null]);
+                $oldAddress->delete();
             }
 
-            Property::create([
+            $attributes = [
                 'reference' => $validated['reference'],
                 'name' => $validated['name'],
                 'type' => $validated['type'],
@@ -77,10 +124,18 @@ class PropertyController extends Controller
                 'surface_m2' => $validated['surface_m2'] ?? null,
                 'status' => $validated['status'],
                 'notes' => $validated['notes'] ?? null,
-            ]);
+            ];
+
+            if ($property) {
+                $property->update($attributes);
+            } else {
+                Property::create($attributes);
+            }
         });
 
-        return to_route('admin.properties.index')
-            ->with('success', 'Le bien a été créé.');
+        return to_route('admin.properties.index')->with(
+            'success',
+            $property ? 'Le bien a été modifié.' : 'Le bien a été créé.',
+        );
     }
 }
