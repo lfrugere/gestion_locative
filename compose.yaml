@@ -1,0 +1,25 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT:-8000}:80"
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_KEY: ${APP_KEY:?APP_KEY doit être défini dans le fichier .env}
+      APP_URL: ${APP_URL:-http://localhost:8000}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Paris}
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /var/www/html/database/database.sqlite
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+    volumes:
+      - ${SQLITE_DATABASE_PATH:-./database/database.sqlite}:/var/www/html/database/database.sqlite
+      - storage_data:/var/www/html/storage
+    restart: unless-stopped
+
+volumes:
+  storage_data:
