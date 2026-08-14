@@ -10,16 +10,16 @@ services:
       APP_DEBUG: ${APP_DEBUG:-false}
       APP_KEY: ${APP_KEY:?APP_KEY doit être défini dans le fichier .env}
       APP_URL: ${APP_URL:-http://localhost:8000}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Paris}
       DB_CONNECTION: sqlite
-      DB_DATABASE: /var/lib/gestion-locative/database.sqlite
+      DB_DATABASE: /var/www/html/database/database.sqlite
       SESSION_DRIVER: database
       CACHE_STORE: database
       QUEUE_CONNECTION: database
     volumes:
-      - sqlite_data:/var/lib/gestion-locative
+      - ./database/database.sqlite:/var/www/html/database/database.sqlite
       - storage_data:/var/www/html/storage
     restart: unless-stopped
 
 volumes:
-  sqlite_data:
   storage_data:
