@@ -43,6 +43,12 @@
             .actions { display: flex; flex-wrap: wrap; gap: 10px; white-space: nowrap; }
             .actions form { display: inline; }
             .link-button { padding: 0; border: 0; color: #b42318; background: transparent; cursor: pointer; font: inherit; }
+            .icon-action { position: relative; display: inline-grid; width: 34px; height: 34px; place-items: center; padding: 0; border: 1px solid #d8e2ec; border-radius: 9px; color: #0f766e; background: #fff; cursor: pointer; font: inherit; font-size: 1.2rem; line-height: 1; text-decoration: none; transition: background .15s ease, border-color .15s ease, transform .15s ease; }
+            .icon-action:hover, .icon-action:focus-visible { border-color: #5eead4; color: #0f766e; background: #e6fffb; outline: 0; text-decoration: none; transform: translateY(-1px); }
+            .icon-action::after { position: absolute; z-index: 20; top: calc(100% + 8px); left: 50%; padding: 5px 8px; border-radius: 6px; color: #fff; background: #102a43; content: attr(data-tooltip); font-size: .73rem; font-weight: 700; line-height: 1; opacity: 0; pointer-events: none; transform: translate(-50%, -4px); transition: opacity .15s ease, transform .15s ease; }
+            .icon-action:hover::after, .icon-action:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
+            .danger-action { color: #b42318; }
+            .danger-action:hover, .danger-action:focus-visible { border-color: #fecaca; color: #b42318; background: #fff1f0; }
             .button.danger { background: #b42318; }
             .button.danger:hover { background: #912018; }
             .list-thumb { width: 56px; height: 56px; border-radius: 6px; object-fit: cover; }
