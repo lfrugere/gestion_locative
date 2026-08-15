@@ -21,6 +21,17 @@ php artisan serve
 
 L'application est alors disponible sur http://localhost:8000.
 
+### Téléversement de fichiers
+
+Les photos et pièces jointes peuvent peser jusqu’à 20 Mo. Pour que PHP local accepte cette taille, modifier le fichier indiqué par `php --ini` (sur ce poste : `C:\Tools\DEV\dev\php\php-8.3.3-nts-Win32-vs16-x64\php.ini`) :
+
+```ini
+upload_max_filesize = 20M
+post_max_size = 24M
+```
+
+Fermer puis rouvrir le terminal avant de relancer `php artisan serve`.
+
 ## Authentification locale
 
 Renseigner les variables `ADMIN_NAME`, `ADMIN_EMAIL` et `ADMIN_PASSWORD` dans `.env`, puis créer le compte administrateur :

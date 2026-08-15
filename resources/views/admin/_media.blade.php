@@ -104,7 +104,7 @@
                 <input type="hidden" name="kind" value="photo">
                 <div class="form-field"><label for="photo_file">Fichier</label><input id="photo_file" type="file" name="file" accept="image/jpeg,image/png,image/webp" required></div>
                 <div class="form-field"><label for="photo_display_name">Nom affiché <span class="field-optional">(facultatif)</span></label><input id="photo_display_name" name="display_name" placeholder="Nom du fichier par défaut"></div>
-                <p class="hint">JPG, PNG ou WebP, 10 Mo maximum. La première photo ajoutée devient la photo principale.</p>
+                <p class="hint">JPG, PNG ou WebP, 20 Mo maximum. La première photo ajoutée devient la photo principale.</p>
                 <div class="form-actions"><button class="button" type="submit">Ajouter la photo</button><button class="button secondary" type="button" data-dialog-close>Annuler</button></div>
             </form>
         </div>
@@ -121,7 +121,7 @@
                 <div class="form-field"><label for="document_file">Fichier</label><input id="document_file" type="file" name="file" accept="application/pdf,image/jpeg,image/png,image/webp,.doc,.docx,.xls,.xlsx" required></div>
                 <div class="form-field"><label for="document_display_name">Nom affiché <span class="field-optional">(facultatif)</span></label><input id="document_display_name" name="display_name" placeholder="Nom du fichier par défaut"></div>
                 <div class="form-field"><label for="document_tags">Tags <span class="field-optional">(facultatif)</span></label><input id="document_tags" name="tags" placeholder="ex. bail, diagnostic, travaux"></div>
-                <p class="hint">PDF, image, DOCX ou XLSX, 10 Mo maximum.</p>
+                <p class="hint">PDF, image, DOCX ou XLSX, 20 Mo maximum.</p>
                 <div class="form-actions"><button class="button" type="submit">Ajouter la pièce jointe</button><button class="button secondary" type="button" data-dialog-close>Annuler</button></div>
             </form>
         </div>

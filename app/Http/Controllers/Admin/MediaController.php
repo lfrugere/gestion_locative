@@ -67,7 +67,7 @@ class MediaController extends Controller
         $validated = $request->validate([
             'kind' => ['required', Rule::in([Media::KIND_PHOTO, Media::KIND_DOCUMENT])],
             'file' => [
-                'required', 'file', 'max:10240',
+                'required', 'file', 'max:20480',
                 $kind === Media::KIND_PHOTO ? 'mimes:jpg,jpeg,png,webp' : 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx',
             ],
             'display_name' => ['nullable', 'string', 'max:255'],

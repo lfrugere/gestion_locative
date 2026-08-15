@@ -274,6 +274,26 @@ class AdminBackOfficeTest extends TestCase
         $this->assertDatabaseHas('media', ['id' => $secondPhoto->id, 'is_primary' => true]);
     }
 
+    public function test_media_upload_is_limited_to_twenty_megabytes_with_a_clear_error_message(): void
+    {
+        $admin = $this->admin();
+        $property = Property::create([
+            'reference' => 'MEDIA-TOO-LARGE',
+            'name' => 'Bien media volumineux',
+            'type' => Property::TYPE_HOUSE,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.properties.media.store', $property), [
+                'kind' => Media::KIND_DOCUMENT,
+                'file' => UploadedFile::fake()->create('diagnostic.pdf', 20481, 'application/pdf'),
+            ])
+            ->assertSessionHasErrors([
+                'file' => 'Le fichier sélectionné ne doit pas dépasser 20 Mo.',
+            ]);
+    }
+
     private function admin(): User
     {
         $user = User::factory()->create();
