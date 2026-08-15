@@ -12,6 +12,9 @@
             <h1>{{ $building->name }}</h1>
             <p class="detail-lead">{{ $building->address->line1 }}, {{ $building->address->postal_code }} {{ $building->address->city }}</p>
         </div>
+        @if ($primaryPhoto)
+            <figure class="detail-hero-photo"><img src="{{ route('admin.media.download', $primaryPhoto) }}" alt="{{ $primaryPhoto->display_name }}"></figure>
+        @endif
         <div class="detail-hero-actions">
             <span class="status-pill status-active">{{ $building->properties->count() }} bien{{ $building->properties->count() > 1 ? 's' : '' }}</span>
             @can('manage buildings')
@@ -59,9 +62,6 @@
 
         <aside class="detail-aside">
             @include('admin._map', ['address' => $building->address, 'title' => 'Carte'])
-            @if ($primaryPhoto)
-                <section class="cover-card"><img src="{{ route('admin.media.download', $primaryPhoto) }}" alt="{{ $primaryPhoto->display_name }}"><div><span>Photo principale</span><strong>{{ $primaryPhoto->display_name }}</strong></div></section>
-            @endif
         </aside>
     </div>
 @endsection

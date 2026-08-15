@@ -6,9 +6,9 @@ use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\PermissionRegistrar;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class DatabaseSeeder extends Seeder
 {
@@ -28,6 +28,9 @@ class DatabaseSeeder extends Seeder
             'manage buildings',
             'view properties',
             'manage properties',
+            'view tenants',
+            'manage tenants',
+            'manage system',
         ];
 
         foreach ($permissions as $permission) {
@@ -44,6 +47,8 @@ class DatabaseSeeder extends Seeder
             'access admin',
             'view buildings',
             'view properties',
+            'view tenants',
+            'manage tenants',
         ]);
 
         Role::findOrCreate('locataire', 'web');
@@ -65,6 +70,6 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        $user->syncRoles($admin);
+        $user->syncRoles([$admin, $manager]);
     }
 }

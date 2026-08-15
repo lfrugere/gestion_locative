@@ -13,4 +13,4 @@ Avant toute modification, lire [docs/architecture.md](docs/architecture.md). Ce 
 
 ## Portée actuelle
 
-Le projet gère le patrimoine (immeubles, appartements, maisons et parkings). Les baux, loyers, chambres et parcours des locataires ne sont pas encore modélisés : ne pas créer d’indicateur ni de comportement qui les suppose.
+Le projet gère le patrimoine (immeubles, appartements, maisons et parkings) et les fiches locataires. Les baux, loyers, chambres et parcours des locataires ne sont pas encore modélisés : ne pas créer d’indicateur ni de comportement qui les suppose.

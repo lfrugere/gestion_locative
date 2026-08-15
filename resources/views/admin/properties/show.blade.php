@@ -13,6 +13,9 @@
             <h1>{{ $property->name }}</h1>
             <p class="detail-lead">{{ $property->building?->name ?? $mapAddress?->city ?? 'Adresse à compléter' }}</p>
         </div>
+        @if ($primaryPhoto)
+            <figure class="detail-hero-photo"><img src="{{ route('admin.media.download', $primaryPhoto) }}" alt="{{ $primaryPhoto->display_name }}"></figure>
+        @endif
         <div class="detail-hero-actions">
             <span class="status-pill {{ $property->status === 'active' ? 'status-active' : 'status-muted' }}">{{ $property->status === 'active' ? 'Actif' : 'Inactif' }}</span>
             @can('manage properties')
@@ -56,9 +59,6 @@
 
         <aside class="detail-aside">
             @include('admin._map', ['address' => $mapAddress, 'title' => 'Carte'])
-            @if ($primaryPhoto)
-                <section class="cover-card"><img src="{{ route('admin.media.download', $primaryPhoto) }}" alt="{{ $primaryPhoto->display_name }}"><div><span>Photo principale</span><strong>{{ $primaryPhoto->display_name }}</strong></div></section>
-            @endif
         </aside>
     </div>
 @endsection
