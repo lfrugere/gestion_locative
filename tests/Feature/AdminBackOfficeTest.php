@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Address;
 use App\Models\Building;
+use App\Models\Media;
 use App\Models\Property;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\User;
 use Illuminate\Contracts\Auth\Access\Gate;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -45,6 +47,29 @@ class AdminBackOfficeTest extends TestCase
             ->get('/admin')
             ->assertOk()
             ->assertSee('Vue d’ensemble');
+    }
+
+    public function test_dashboard_displays_the_portfolio_summary_and_recent_items(): void
+    {
+        $building = $this->createBuilding();
+        $property = Property::create([
+            'reference' => 'DASH-APT-01',
+            'name' => 'Appartement du tableau de bord',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get('/admin')
+            ->assertOk()
+            ->assertSee('Points d’attention')
+            ->assertSee('Immeubles récents')
+            ->assertSee('Biens récents')
+            ->assertSee($building->name)
+            ->assertSee($property->name)
+            ->assertSee(route('admin.buildings.create'))
+            ->assertSee(route('admin.properties.create'));
     }
 
     public function test_admin_can_create_a_building(): void
@@ -214,6 +239,82 @@ class AdminBackOfficeTest extends TestCase
             'address_id' => null,
         ]);
         $this->assertDatabaseMissing('addresses', ['id' => $address->id]);
+    }
+
+    public function test_admin_can_upload_tag_and_manage_media_on_a_property(): void
+    {
+        $admin = $this->admin();
+        $property = Property::create([
+            'reference' => 'MEDIA-01',
+            'name' => 'Bien media',
+            'type' => Property::TYPE_HOUSE,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.properties.media.store', $property), [
+                'kind' => Media::KIND_PHOTO,
+                'file' => UploadedFile::fake()->create('facade.jpg', 100, 'image/jpeg'),
+            ])
+            ->assertRedirect(route('admin.properties.show', $property));
+
+        $photo = Media::firstOrFail();
+        $this->assertTrue($photo->is_primary);
+
+        $this->actingAs($admin)
+            ->post(route('admin.properties.media.store', $property), [
+                'kind' => Media::KIND_PHOTO,
+                'file' => UploadedFile::fake()->create('salon.jpg', 100, 'image/jpeg'),
+            ])
+            ->assertRedirect(route('admin.properties.show', $property));
+
+        $secondPhoto = Media::where('kind', Media::KIND_PHOTO)->where('id', '!=', $photo->id)->firstOrFail();
+        $this->assertSame(1, Media::where('kind', Media::KIND_PHOTO)->where('is_primary', true)->count());
+
+        $this->actingAs($admin)
+            ->post(route('admin.properties.media.store', $property), [
+                'kind' => Media::KIND_DOCUMENT,
+                'file' => UploadedFile::fake()->create('diagnostic.pdf', 100, 'application/pdf'),
+                'display_name' => 'Diagnostic énergétique',
+                'tags' => 'diagnostic, énergie',
+            ])
+            ->assertRedirect(route('admin.properties.show', $property));
+
+        $document = Media::where('kind', Media::KIND_DOCUMENT)->firstOrFail();
+        $this->assertSame('Diagnostic énergétique', $document->display_name);
+        $this->assertDatabaseHas('tags', ['name' => 'diagnostic']);
+        $this->assertDatabaseHas('tags', ['name' => 'énergie']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.media.download', $document))
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->delete(route('admin.media.destroy', $photo))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('media', ['id' => $photo->id]);
+        $this->assertDatabaseHas('media', ['id' => $secondPhoto->id, 'is_primary' => true]);
+    }
+
+    public function test_media_upload_is_limited_to_twenty_megabytes_with_a_clear_error_message(): void
+    {
+        $admin = $this->admin();
+        $property = Property::create([
+            'reference' => 'MEDIA-TOO-LARGE',
+            'name' => 'Bien media volumineux',
+            'type' => Property::TYPE_HOUSE,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.properties.media.store', $property), [
+                'kind' => Media::KIND_DOCUMENT,
+                'file' => UploadedFile::fake()->create('diagnostic.pdf', 20481, 'application/pdf'),
+            ])
+            ->assertSessionHasErrors([
+                'file' => 'Le fichier sélectionné ne doit pas dépasser 20 Mo.',
+            ]);
     }
 
     private function admin(): User
