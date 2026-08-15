@@ -1,0 +1,164 @@
+# Architecture et cohérence produit
+
+Ce référentiel décrit les décisions à conserver lors des évolutions de l’application. Il s’adresse aux développeurs et aux agents IA qui interviennent sur le dépôt.
+
+## 1. Objectif et périmètre
+
+L’application permet au propriétaire ou gestionnaire de suivre son patrimoine locatif : immeubles, biens, adresses et documents associés. La volumétrie est volontairement faible ; la simplicité d’exploitation prime sur l’optimisation prématurée.
+
+Le périmètre actuel couvre :
+
+- les immeubles ;
+- les appartements, maisons et parkings ;
+- les adresses et leur géocodage ;
+- les photos, pièces jointes et tags ;
+- le back-office et ses droits d’accès.
+
+Les chambres de colocation, baux, loyers, locataires et leurs parcours seront ajoutés plus tard. Les écrans et indicateurs ne doivent pas anticiper ces données comme si elles existaient déjà.
+
+## 2. Socle technique
+
+| Sujet | Décision |
+|---|---|
+| Framework | Laravel 13, PHP 8.3 |
+| Langue et fuseau | Français (fr), Europe/Paris |
+| Base de données | SQLite, adaptée au faible volume et fichier monté depuis l’hôte |
+| Déploiement | Docker Compose, conteneur php:8.3-apache |
+| Stockage des fichiers | Disque Laravel local, privé, persistant dans le volume storage_data |
+| Carte | Leaflet avec fonds OpenStreetMap |
+
+### Exécution locale et conteneurisée
+
+- En local, le fichier SQLite est configuré par SQLITE_DATABASE_PATH.
+- Dans Docker, Compose monte ce fichier précisément dans /var/www/html/database/database.sqlite. Il ne faut pas remplacer ce montage par un volume Docker pour la base.
+- Les médias sont conservés dans le volume Docker storage_data ; ils ne sont pas publiés via public/storage.
+- Les fichiers peuvent peser jusqu’à 20 Mo. PHP doit avoir upload_max_filesize = 20M et post_max_size = 24M ; le Dockerfile les applique déjà.
+
+Ne pas ajouter un service MySQL, Redis, Elasticsearch ou un broker sans besoin métier explicite : cela compliquerait le déploiement et les sauvegardes sans bénéfice à cette échelle.
+
+## 3. Organisation applicative
+
+    app/
+      Http/Controllers/Admin/  contrôleurs du back-office
+      Models/                  modèles Eloquent et relations
+      Services/                géocodage et gestion transactionnelle des médias
+    resources/views/
+      admin/                   vues Blade du back-office et fragments partagés
+      layouts/admin.blade.php  layout et design system actuel
+    database/
+      migrations/              schéma SQLite
+      seeders/                 rôles, permissions et administrateur initial
+    tests/Feature/             parcours fonctionnels et autorisations
+
+Les contrôleurs valident les entrées, appellent un service lorsque l’opération est transverse, puis redirigent avec un message. Les vues n’effectuent pas de logique de persistance. Les opérations sur fichiers et tags passent par MediaManager afin de rester transactionnelles et cohérentes.
+
+## 4. Modèle métier et invariants
+
+    ADDRESS 1 ─── 1 BUILDING
+    BUILDING 1 ─── n PROPERTY
+    ADDRESS  1 ─── 0..1 PROPERTY (maison uniquement)
+    BUILDING ou PROPERTY 1 ─── n MEDIA
+    MEDIA n ─── n TAG
+
+| Entité | Règles à préserver |
+|---|---|
+| Immeuble | Possède toujours une adresse propre et une référence unique. Sa suppression est interdite tant que des biens y sont rattachés. |
+| Appartement / parking | Doit être rattaché à un immeuble ; son adresse propre est absente et l’adresse de l’immeuble est utilisée. |
+| Maison | N’est pas rattachée à un immeuble et possède sa propre adresse. |
+| Bien | A une référence unique, un type (apartment, house, parking) et un statut (active, inactive). |
+| Adresse | Contient latitude, longitude et date de géocodage quand le géocodage aboutit. |
+| Média | Est polymorphiquement rattaché à un immeuble ou un bien. Une photo principale au plus est définie par propriétaire. |
+| Tag | Est partagé entre les documents ; les tags sont synchronisés depuis une liste séparée par des virgules. |
+
+Si un changement modifie l’une de ces relations, ajouter ou adapter un test fonctionnel. Ne pas uniquement masquer une incohérence dans l’interface.
+
+## 5. Authentification et autorisations
+
+L’authentification utilise Laravel Fortify. L’inscription publique est désactivée.
+
+| Rôle | Droits actuels |
+|---|---|
+| admin | Accès au back-office et gestion complète des immeubles et biens |
+| gestionnaire | Accès et consultation des immeubles et biens ; pas de modification à ce stade |
+| locataire | Rôle réservé aux évolutions futures |
+
+Les permissions Spatie sont appliquées à deux niveaux : middleware de route et directives Blade @can. Les deux doivent rester alignés. Les médias suivent le droit de leur propriétaire : un fichier d’immeuble requiert le droit sur les immeubles, un fichier de bien celui sur les biens.
+
+## 6. Médias, documents et géocodage
+
+### Médias
+
+- Les photos acceptent JPG, PNG et WebP ; les documents acceptent PDF, images, DOC/DOCX et XLS/XLSX.
+- La limite est de 20 Mo, contrôlée dans Laravel et PHP.
+- La première photo devient automatiquement principale. La suppression de la photo principale promeut une autre photo lorsqu’elle existe.
+- Les téléchargements passent exclusivement par la route admin.media.download, qui vérifie les droits avant de servir le fichier.
+- La carte médias affiche d’abord les pièces jointes et leur taille, puis les photos sous forme de galerie. Le visualiseur plein format permet de naviguer entre les photos.
+
+### Géocodage
+
+- Une adresse est géocodée après création ou mise à jour.
+- La commande php artisan addresses:geocode permet de traiter les adresses existantes ; --force relance celles déjà géocodées.
+- Une absence de coordonnées n’est pas bloquante : l’interface explique que la carte est indisponible et le tableau de bord le signale.
+- Les appels externes de géocodage peuvent échouer. Ne jamais empêcher la création d’un immeuble ou d’une maison à cause de cette indisponibilité.
+
+## 7. Design system du back-office
+
+Le back-office est volontairement sobre, dense et lisible. Il n’utilise pas de bibliothèque CSS : les styles sont centralisés dans resources/views/layouts/admin.blade.php afin de conserver un langage visuel cohérent.
+
+### Principes visuels
+
+- Fond gris bleuté clair, navigation latérale bleu nuit, actions principales vert sarcelle.
+- Typographie compacte : ne pas réintroduire de titres surdimensionnés ni d’espacements excessifs.
+- Cartes blanches avec bordure et ombre discrète ; rayon de 12 à 16 px.
+- Boutons primaires vert sarcelle, boutons secondaires gris clair, actions destructives rouges.
+- Les actions de tableaux sont des boutons icônes, avec infobulle au survol et libellé accessible (aria-label).
+- Les listes privilégient une information scannable : référence, nom, contexte et état.
+- Les fiches utilisent un en-tête sombre pour l’identité de l’entité, puis une grille avec contenu principal et panneau latéral (carte, photo principale).
+- Les formulaires d’ajout et d’édition de médias s’ouvrent dans des dialogues natifs ; ils ne doivent pas alourdir la fiche.
+- Les photos sont des miniatures cliquables. Une boîte de dialogue permet la consultation plein format et la navigation clavier.
+
+### Composants et classes à réutiliser
+
+| Usage | Classes ou fragments |
+|---|---|
+| Layout | layouts.admin, admin-shell, admin-main, admin-header |
+| Boutons | button, button secondary, button danger, icon-action |
+| Fiches | detail-hero, detail-grid, detail-panel, detail-aside |
+| États | status-pill, status-active, status-muted, flash, errors |
+| Médias | admin._media, media-card, photo-grid, modal-dialog |
+| Carte | admin._map, map-card, address-map |
+
+Avant d’ajouter une règle CSS, chercher une classe existante. Les styles spécifiques à une vue restent dans le layout tant que le projet n’a pas adopté une feuille de style compilée dédiée ; ne pas créer de styles inline isolés dans une vue.
+
+Les points de rupture existants sont 980 px et 720 px. Toute nouvelle grille doit être lisible à ces tailles, sans nécessiter de défilement horizontal hors des tableaux.
+
+## 8. Tableau de bord
+
+La page /admin doit rester un outil de pilotage du périmètre existant :
+
+- compteurs d’immeubles, de biens, de types de bien et de biens actifs ;
+- actions rapides vers les créations ;
+- points d’attention objectivement calculables (médias manquants, coordonnées absentes) ;
+- derniers immeubles et biens avec accès direct aux fiches.
+
+Ne pas y afficher de taux d’occupation, loyers, échéances de bail ou données de locataires avant que le modèle correspondant existe.
+
+## 9. Conventions de modification
+
+1. Partir de master pour toute nouvelle PR.
+2. Limiter une PR à une évolution cohérente ; ne pas mélanger une refonte visuelle avec une migration métier non liée.
+3. Préserver l’UTF-8 dans les vues et documents français.
+4. Utiliser des migrations pour chaque changement de schéma ; ne jamais modifier une migration déjà appliquée.
+5. Ajouter des tests de feature pour les règles métier, les permissions, les formulaires et les régressions corrigées.
+6. Pour une vue ou le layout, exécuter php artisan view:cache ; pour le PHP, lancer vendor/bin/pint --dirty ; toujours terminer par php artisan test et git diff --check.
+7. Documenter dans ce fichier toute décision durable qui influence les futurs écrans ou modèles.
+
+## 10. Évolutions prévues et limites assumées
+
+| Sujet | État | Décision |
+|---|---|---|
+| SQLite | Acceptable | Suffisant pour le faible nombre de biens et utilisateurs. Réévaluer seulement en cas d’accès concurrents soutenus ou de besoins de reporting complexes. |
+| Fichiers locaux | À surveiller | Sauvegarder le fichier SQLite et le volume storage_data ensemble ; ils constituent une même unité de restauration. |
+| Carte et géocodage | À surveiller | Dépendance à des services publics externes ; conserver les coordonnées en base et proposer le rejeu par commande. |
+| ACL locataires | À concevoir | Les futures routes locataires devront séparer strictement leurs données de l’administration. |
+| Baux et parcours | À concevoir | Introduire les nouveaux modèles avant les tableaux de bord financiers ou d’occupation. |
