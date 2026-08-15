@@ -1,3 +1,6 @@
+@php($photos = $media->where('kind', \App\Models\Media::KIND_PHOTO)->values())
+@php($documents = $media->where('kind', \App\Models\Media::KIND_DOCUMENT))
+
 <section class="card media-card">
     <div class="media-card-header">
         <div>
@@ -11,38 +14,6 @@
             </div>
         @endcan
     </div>
-
-    @php($photos = $media->where('kind', \App\Models\Media::KIND_PHOTO))
-    @php($documents = $media->where('kind', \App\Models\Media::KIND_DOCUMENT))
-
-    @if ($photos->isNotEmpty())
-        <h3 class="media-section-title">Photos</h3>
-        <div class="photo-grid">
-            @foreach ($photos as $photo)
-                <article class="photo-item @if($photo->is_primary) primary @endif">
-                    <img src="{{ route('admin.media.download', $photo) }}" alt="{{ $photo->display_name }}">
-                    <div class="photo-item-content">
-                        <span>{{ $photo->is_primary ? 'Photo principale' : $photo->display_name }}</span>
-                        @can($managePermission)
-                            <div class="actions photo-actions">
-                                @unless($photo->is_primary)
-                                    <form method="POST" action="{{ route('admin.media.primary', $photo) }}">
-                                        @csrf
-                                        <button class="text-action" type="submit">Définir par défaut</button>
-                                    </form>
-                                @endunless
-                                <form method="POST" action="{{ route('admin.media.destroy', $photo) }}" onsubmit="return confirm('Supprimer cette photo ?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="text-action danger-text-action" type="submit">Supprimer</button>
-                                </form>
-                            </div>
-                        @endcan
-                    </div>
-                </article>
-            @endforeach
-        </div>
-    @endif
 
     @if ($documents->isNotEmpty())
         <h3 class="media-section-title">Pièces jointes</h3>
@@ -88,10 +59,56 @@
         </div>
     @endif
 
+    @if ($photos->isNotEmpty())
+        <h3 class="media-section-title">Photos</h3>
+        <div class="photo-grid">
+            @foreach ($photos as $index => $photo)
+                <article class="photo-item @if($photo->is_primary) primary @endif">
+                    <button class="photo-preview" type="button" data-photo-index="{{ $index }}" data-photo-src="{{ route('admin.media.download', $photo) }}" data-photo-name="{{ $photo->display_name }}" aria-label="Afficher {{ $photo->display_name }} en grand">
+                        <img src="{{ route('admin.media.download', $photo) }}" alt="{{ $photo->display_name }}">
+                        <span class="photo-name">{{ $photo->display_name }}</span>
+                    </button>
+                    <div class="photo-item-content">
+                        @if ($photo->is_primary)<span class="photo-badge">Photo principale</span>@endif
+                        @can($managePermission)
+                            <div class="actions photo-actions">
+                                @unless($photo->is_primary)
+                                    <form method="POST" action="{{ route('admin.media.primary', $photo) }}">
+                                        @csrf
+                                        <button class="text-action" type="submit">Définir par défaut</button>
+                                    </form>
+                                @endunless
+                                <form method="POST" action="{{ route('admin.media.destroy', $photo) }}" onsubmit="return confirm('Supprimer cette photo ?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="text-action danger-text-action" type="submit">Supprimer</button>
+                                </form>
+                            </div>
+                        @endcan
+                    </div>
+                </article>
+            @endforeach
+        </div>
+    @endif
+
     @if ($photos->isEmpty() && $documents->isEmpty())
         <p class="empty compact">Aucun média n’a encore été ajouté.</p>
     @endif
 </section>
+
+@if ($photos->isNotEmpty())
+    <dialog id="photo-viewer-dialog" class="photo-viewer-dialog" aria-labelledby="photo-viewer-title">
+        <form method="dialog" class="modal-close-form"><button type="submit" aria-label="Fermer la photo">×</button></form>
+        <div class="photo-viewer-content">
+            <button class="photo-viewer-navigation previous" type="button" data-photo-previous aria-label="Photo précédente">‹</button>
+            <figure>
+                <img id="photo-viewer-image" src="" alt="">
+                <figcaption id="photo-viewer-title"></figcaption>
+            </figure>
+            <button class="photo-viewer-navigation next" type="button" data-photo-next aria-label="Photo suivante">›</button>
+        </div>
+    </dialog>
+@endif
 
 @can($managePermission)
     <dialog id="photo-upload-dialog" class="modal-dialog" aria-labelledby="photo-upload-title">
@@ -126,35 +143,72 @@
             </form>
         </div>
     </dialog>
+@endcan
 
-    <script>
-        const openDialog = (dialog) => {
-            if (typeof dialog.showModal === 'function') {
-                dialog.showModal();
-            } else {
-                dialog.setAttribute('open', '');
-            }
+<script>
+    const openDialog = (dialog) => {
+        if (typeof dialog.showModal === 'function') {
+            dialog.showModal();
+        } else {
+            dialog.setAttribute('open', '');
+        }
+    };
+    const closeDialog = (dialog) => {
+        if (typeof dialog.close === 'function') {
+            dialog.close();
+        } else {
+            dialog.removeAttribute('open');
+        }
+    };
+
+    document.querySelectorAll('[data-dialog-open]').forEach((trigger) => {
+        trigger.addEventListener('click', () => openDialog(document.getElementById(trigger.dataset.dialogOpen)));
+    });
+    document.querySelectorAll('[data-dialog-close]').forEach((trigger) => {
+        trigger.addEventListener('click', () => closeDialog(trigger.closest('dialog')));
+    });
+    document.querySelectorAll('.modal-dialog, .photo-viewer-dialog').forEach((dialog) => {
+        dialog.addEventListener('click', (event) => { if (event.target === dialog) closeDialog(dialog); });
+    });
+
+    const photoTriggers = Array.from(document.querySelectorAll('[data-photo-index]'));
+    const photoViewer = document.getElementById('photo-viewer-dialog');
+    if (photoViewer) {
+        const photoViewerImage = document.getElementById('photo-viewer-image');
+        const photoViewerTitle = document.getElementById('photo-viewer-title');
+        const previousPhoto = document.querySelector('[data-photo-previous]');
+        const nextPhoto = document.querySelector('[data-photo-next]');
+        let currentPhotoIndex = 0;
+
+        const displayPhoto = (index) => {
+            currentPhotoIndex = index;
+            const photo = photoTriggers[currentPhotoIndex];
+            photoViewerImage.src = photo.dataset.photoSrc;
+            photoViewerImage.alt = photo.dataset.photoName;
+            photoViewerTitle.textContent = photo.dataset.photoName;
+            previousPhoto.disabled = currentPhotoIndex === 0;
+            nextPhoto.disabled = currentPhotoIndex === photoTriggers.length - 1;
         };
-        const closeDialog = (dialog) => {
-            if (typeof dialog.close === 'function') {
-                dialog.close();
-            } else {
-                dialog.removeAttribute('open');
-            }
-        };
-        document.querySelectorAll('[data-dialog-open]').forEach((trigger) => {
-            trigger.addEventListener('click', () => openDialog(document.getElementById(trigger.dataset.dialogOpen)));
+
+        photoTriggers.forEach((trigger, index) => {
+            trigger.addEventListener('click', () => {
+                displayPhoto(index);
+                openDialog(photoViewer);
+            });
         });
-        document.querySelectorAll('[data-dialog-close]').forEach((trigger) => {
-            trigger.addEventListener('click', () => closeDialog(trigger.closest('dialog')));
+        previousPhoto.addEventListener('click', () => displayPhoto(currentPhotoIndex - 1));
+        nextPhoto.addEventListener('click', () => displayPhoto(currentPhotoIndex + 1));
+        photoViewer.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft' && currentPhotoIndex > 0) displayPhoto(currentPhotoIndex - 1);
+            if (event.key === 'ArrowRight' && currentPhotoIndex < photoTriggers.length - 1) displayPhoto(currentPhotoIndex + 1);
         });
-        document.querySelectorAll('.modal-dialog').forEach((dialog) => {
-            dialog.addEventListener('click', (event) => { if (event.target === dialog) closeDialog(dialog); });
-        });
+    }
+
+    @can($managePermission)
         @if ($errors->has('file') && old('kind') === \App\Models\Media::KIND_PHOTO)
             openDialog(document.getElementById('photo-upload-dialog'));
         @elseif ($errors->has('file') && old('kind') === \App\Models\Media::KIND_DOCUMENT)
             openDialog(document.getElementById('document-upload-dialog'));
         @endif
-    </script>
-@endcan
+    @endcan
+</script>
