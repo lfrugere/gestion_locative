@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\BuildingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PropertyController;
+use App\Http\Controllers\Admin\SystemCheckController;
+use App\Http\Controllers\Admin\TenantController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -23,6 +25,9 @@ Route::middleware(['auth', 'permission:access admin'])
         Route::get('/', DashboardController::class)->name('dashboard');
         Route::get('/media/{media}/download', [MediaController::class, 'download'])
             ->name('media.download');
+
+        Route::middleware('permission:manage system')->get('/configuration', SystemCheckController::class)
+            ->name('system-checks.index');
 
         Route::middleware('permission:view buildings')->group(function () {
             Route::get('/buildings', [BuildingController::class, 'index'])
@@ -78,7 +83,31 @@ Route::middleware(['auth', 'permission:access admin'])
                 ->name('properties.media.store');
         });
 
-        Route::middleware('permission:manage buildings|manage properties')->group(function () {
+        Route::middleware('permission:view tenants')->group(function () {
+            Route::get('/tenants', [TenantController::class, 'index'])->name('tenants.index');
+            Route::get('/tenants/{tenant}', [TenantController::class, 'show'])
+                ->whereNumber('tenant')
+                ->name('tenants.show');
+        });
+
+        Route::middleware('permission:manage tenants')->group(function () {
+            Route::get('/tenants/create', [TenantController::class, 'create'])->name('tenants.create');
+            Route::post('/tenants', [TenantController::class, 'store'])->name('tenants.store');
+            Route::get('/tenants/{tenant}/edit', [TenantController::class, 'edit'])
+                ->whereNumber('tenant')
+                ->name('tenants.edit');
+            Route::put('/tenants/{tenant}', [TenantController::class, 'update'])
+                ->whereNumber('tenant')
+                ->name('tenants.update');
+            Route::delete('/tenants/{tenant}', [TenantController::class, 'destroy'])
+                ->whereNumber('tenant')
+                ->name('tenants.destroy');
+            Route::post('/tenants/{tenant}/media', [MediaController::class, 'storeTenant'])
+                ->whereNumber('tenant')
+                ->name('tenants.media.store');
+        });
+
+        Route::middleware('permission:manage buildings|manage properties|manage tenants')->group(function () {
             Route::put('/media/{media}', [MediaController::class, 'update'])->name('media.update');
             Route::post('/media/{media}/primary', [MediaController::class, 'setPrimary'])->name('media.primary');
             Route::delete('/media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');

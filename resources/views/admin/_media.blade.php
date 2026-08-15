@@ -1,15 +1,18 @@
 @php($photos = $media->where('kind', \App\Models\Media::KIND_PHOTO)->values())
 @php($documents = $media->where('kind', \App\Models\Media::KIND_DOCUMENT))
+@php($singlePhoto = $singlePhoto ?? false)
 
 <section class="card media-card">
     <div class="media-card-header">
         <div>
             <p class="panel-kicker">Médias</p>
-            <h2>Photos et pièces jointes</h2>
+            <h2>{{ $singlePhoto ? 'Photo d’identité et pièces jointes' : 'Photos et pièces jointes' }}</h2>
         </div>
         @can($managePermission)
             <div class="media-card-actions">
-                <button class="button secondary" type="button" data-dialog-open="photo-upload-dialog">Ajouter une photo</button>
+                @if (! $singlePhoto || $photos->isEmpty())
+                    <button class="button secondary" type="button" data-dialog-open="photo-upload-dialog">{{ $singlePhoto ? 'Ajouter une photo d’identité' : 'Ajouter une photo' }}</button>
+                @endif
                 <button class="button" type="button" data-dialog-open="document-upload-dialog">Ajouter une pièce jointe</button>
             </div>
         @endcan
@@ -60,7 +63,7 @@
     @endif
 
     @if ($photos->isNotEmpty())
-        <h3 class="media-section-title">Photos</h3>
+        <h3 class="media-section-title">{{ $singlePhoto ? 'Photo d’identité' : 'Photos' }}</h3>
         <div class="photo-grid">
             @foreach ($photos as $index => $photo)
                 <article class="photo-item @if($photo->is_primary) primary @endif">
@@ -69,10 +72,10 @@
                         <span class="photo-name">{{ $photo->display_name }}</span>
                     </button>
                     <div class="photo-item-content">
-                        @if ($photo->is_primary)<span class="photo-badge">Photo principale</span>@endif
+                        @if ($singlePhoto)<span class="photo-badge">Photo d’identité</span>@elseif ($photo->is_primary)<span class="photo-badge">Photo principale</span>@endif
                         @can($managePermission)
                             <div class="actions photo-actions">
-                                @unless($photo->is_primary)
+                                @unless($singlePhoto || $photo->is_primary)
                                     <form method="POST" action="{{ route('admin.media.primary', $photo) }}">
                                         @csrf
                                         <button class="text-action" type="submit">Définir par défaut</button>
@@ -114,15 +117,15 @@
     <dialog id="photo-upload-dialog" class="modal-dialog" aria-labelledby="photo-upload-title">
         <form method="dialog" class="modal-close-form"><button type="submit" aria-label="Fermer">×</button></form>
         <div class="modal-content">
-            <p class="panel-kicker">Photos</p>
-            <h2 id="photo-upload-title">Ajouter une photo</h2>
+            <p class="panel-kicker">{{ $singlePhoto ? 'Photo d’identité' : 'Photos' }}</p>
+            <h2 id="photo-upload-title">{{ $singlePhoto ? 'Ajouter une photo d’identité' : 'Ajouter une photo' }}</h2>
             <form method="POST" action="{{ $uploadRoute }}" enctype="multipart/form-data" class="modal-form">
                 @csrf
                 <input type="hidden" name="kind" value="photo">
                 <div class="form-field"><label for="photo_file">Fichier</label><input id="photo_file" type="file" name="file" accept="image/jpeg,image/png,image/webp" required></div>
                 <div class="form-field"><label for="photo_display_name">Nom affiché <span class="field-optional">(facultatif)</span></label><input id="photo_display_name" name="display_name" placeholder="Nom du fichier par défaut"></div>
-                <p class="hint">JPG, PNG ou WebP, 20 Mo maximum. La première photo ajoutée devient la photo principale.</p>
-                <div class="form-actions"><button class="button" type="submit">Ajouter la photo</button><button class="button secondary" type="button" data-dialog-close>Annuler</button></div>
+                <p class="hint">JPG, PNG ou WebP, 20 Mo maximum. {{ $singlePhoto ? 'Un seul portrait est autorisé pour ce locataire.' : 'La première photo ajoutée devient la photo principale.' }}</p>
+                <div class="form-actions"><button class="button" type="submit">{{ $singlePhoto ? 'Ajouter la photo d’identité' : 'Ajouter la photo' }}</button><button class="button secondary" type="button" data-dialog-close>Annuler</button></div>
             </form>
         </div>
     </dialog>

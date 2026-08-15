@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Building;
 use App\Models\Media;
 use App\Models\Property;
+use App\Models\Tenant;
 use App\Services\MediaManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,18 @@ class MediaController extends Controller
     public function storeProperty(Request $request, Property $property, MediaManager $manager): RedirectResponse
     {
         return $this->store($request, $property, $manager, 'admin.properties.show');
+    }
+
+    public function storeTenant(Request $request, Tenant $tenant, MediaManager $manager): RedirectResponse
+    {
+        if ($request->string('kind')->toString() === Media::KIND_PHOTO
+            && $tenant->media()->where('kind', Media::KIND_PHOTO)->exists()) {
+            return back()->withInput()->withErrors([
+                'file' => 'Un locataire ne peut avoir qu’une seule photo d’identité. Supprimez-la avant d’en ajouter une autre.',
+            ]);
+        }
+
+        return $this->store($request, $tenant, $manager, 'admin.tenants.show');
     }
 
     public function update(Request $request, Media $media, MediaManager $manager): RedirectResponse
@@ -81,11 +94,21 @@ class MediaController extends Controller
 
     private function canView(Media $media): bool
     {
-        return auth()->user()->can($media->mediable_type === Building::class ? 'view buildings' : 'view properties');
+        return match ($media->mediable_type) {
+            Building::class => auth()->user()->can('view buildings'),
+            Property::class => auth()->user()->can('view properties'),
+            Tenant::class => auth()->user()->can('view tenants'),
+            default => false,
+        };
     }
 
     private function canManage(Media $media): bool
     {
-        return auth()->user()->can($media->mediable_type === Building::class ? 'manage buildings' : 'manage properties');
+        return match ($media->mediable_type) {
+            Building::class => auth()->user()->can('manage buildings'),
+            Property::class => auth()->user()->can('manage properties'),
+            Tenant::class => auth()->user()->can('manage tenants'),
+            default => false,
+        };
     }
 }

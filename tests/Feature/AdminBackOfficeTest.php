@@ -6,6 +6,7 @@ use App\Models\Address;
 use App\Models\Building;
 use App\Models\Media;
 use App\Models\Property;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -49,6 +50,23 @@ class AdminBackOfficeTest extends TestCase
             ->assertSee('Vue d’ensemble');
     }
 
+    public function test_admin_can_access_the_system_configuration_checklist(): void
+    {
+        $this->actingAs($this->admin())
+            ->get(route('admin.system-checks.index'))
+            ->assertOk()
+            ->assertSee('Configuration du serveur')
+            ->assertSee('Stockage privé des pièces jointes')
+            ->assertSee('Extensions PHP requises');
+
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+
+        $this->actingAs($manager)
+            ->get(route('admin.system-checks.index'))
+            ->assertForbidden();
+    }
+
     public function test_dashboard_displays_the_portfolio_summary_and_recent_items(): void
     {
         $building = $this->createBuilding();
@@ -59,6 +77,12 @@ class AdminBackOfficeTest extends TestCase
             'building_id' => $building->id,
             'status' => 'active',
         ]);
+        $tenant = Tenant::create([
+            'civility' => Tenant::CIVILITY_MRS,
+            'last_name' => 'Tableau',
+            'first_name' => 'Jeanne',
+            'status' => Tenant::STATUS_ACTIVE,
+        ]);
 
         $this->actingAs($this->admin())
             ->get('/admin')
@@ -66,10 +90,13 @@ class AdminBackOfficeTest extends TestCase
             ->assertSee('Points d’attention')
             ->assertSee('Immeubles récents')
             ->assertSee('Biens récents')
+            ->assertSee('Locataires récents')
             ->assertSee($building->name)
             ->assertSee($property->name)
+            ->assertSee($tenant->fullName())
             ->assertSee(route('admin.buildings.create'))
-            ->assertSee(route('admin.properties.create'));
+            ->assertSee(route('admin.properties.create'))
+            ->assertSee(route('admin.tenants.create'));
     }
 
     public function test_admin_can_create_a_building(): void
@@ -315,6 +342,170 @@ class AdminBackOfficeTest extends TestCase
             ->assertSessionHasErrors([
                 'file' => 'Le fichier sélectionné ne doit pas dépasser 20 Mo.',
             ]);
+    }
+
+    public function test_admin_can_create_update_and_delete_a_tenant(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->post(route('admin.tenants.store'), [
+                'civility' => Tenant::CIVILITY_MRS,
+                'last_name' => 'Durand',
+                'first_name' => 'Jeanne',
+                'birth_date' => '1985-02-14',
+                'status' => Tenant::STATUS_CANDIDATE,
+            ])
+            ->assertRedirect(route('admin.tenants.index', ['status' => Tenant::STATUS_CANDIDATE]));
+
+        $tenant = Tenant::firstOrFail();
+        $this->assertSame('Jeanne Durand', $tenant->fullName());
+        $this->assertSame(Tenant::STATUS_CANDIDATE, $tenant->status);
+
+        $this->actingAs($admin)
+            ->put(route('admin.tenants.update', $tenant), [
+                'civility' => Tenant::CIVILITY_MRS,
+                'last_name' => 'Durand',
+                'first_name' => 'Jeanne',
+                'birth_date' => '1985-02-14',
+                'status' => Tenant::STATUS_ACTIVE,
+            ])
+            ->assertRedirect(route('admin.tenants.index', ['status' => Tenant::STATUS_ACTIVE]));
+
+        $this->assertDatabaseHas('tenants', [
+            'id' => $tenant->id,
+            'status' => Tenant::STATUS_ACTIVE,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.tenants.destroy', $tenant))
+            ->assertRedirect(route('admin.tenants.index'));
+
+        $this->assertDatabaseMissing('tenants', ['id' => $tenant->id]);
+    }
+
+    public function test_tenant_list_displays_active_tenants_by_default_and_filters_by_status(): void
+    {
+        $activeTenant = Tenant::create([
+            'civility' => Tenant::CIVILITY_MR,
+            'last_name' => 'Actif',
+            'first_name' => 'Alain',
+            'status' => Tenant::STATUS_ACTIVE,
+        ]);
+        $candidateTenant = Tenant::create([
+            'civility' => Tenant::CIVILITY_MRS,
+            'last_name' => 'Candidate',
+            'first_name' => 'Claire',
+            'status' => Tenant::STATUS_CANDIDATE,
+        ]);
+        Tenant::create([
+            'civility' => Tenant::CIVILITY_OTHER,
+            'last_name' => 'Refuse',
+            'first_name' => 'Rene',
+            'status' => Tenant::STATUS_REFUSED,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.tenants.index'))
+            ->assertOk()
+            ->assertSee($activeTenant->fullName())
+            ->assertDontSee($candidateTenant->fullName());
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.tenants.index', ['status' => Tenant::STATUS_CANDIDATE]))
+            ->assertOk()
+            ->assertSee($candidateTenant->fullName())
+            ->assertDontSee($activeTenant->fullName());
+    }
+
+    public function test_admin_can_manage_tenant_media_and_manager_can_manage_tenants(): void
+    {
+        $tenant = Tenant::create([
+            'civility' => Tenant::CIVILITY_MR,
+            'last_name' => 'Martin',
+            'first_name' => 'Paul',
+            'status' => Tenant::STATUS_ACTIVE,
+        ]);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->post(route('admin.tenants.media.store', $tenant), [
+                'kind' => Media::KIND_PHOTO,
+                'file' => UploadedFile::fake()->create('portrait.jpg', 100, 'image/jpeg'),
+            ])
+            ->assertRedirect(route('admin.tenants.show', $tenant));
+
+        $photo = Media::firstOrFail();
+        $this->assertTrue($photo->is_primary);
+
+        $this->actingAs($admin)
+            ->post(route('admin.tenants.media.store', $tenant), [
+                'kind' => Media::KIND_PHOTO,
+                'file' => UploadedFile::fake()->create('second-portrait.jpg', 100, 'image/jpeg'),
+            ])
+            ->assertSessionHasErrors([
+                'file' => 'Un locataire ne peut avoir qu’une seule photo d’identité. Supprimez-la avant d’en ajouter une autre.',
+            ]);
+
+        $this->assertSame(1, $tenant->media()->where('kind', Media::KIND_PHOTO)->count());
+
+        $this->actingAs($admin)
+            ->get(route('admin.tenants.show', $tenant))
+            ->assertOk()
+            ->assertSee('detail-hero-photo', false)
+            ->assertSee('Photo d’identité');
+
+        $this->actingAs($admin)
+            ->post(route('admin.tenants.media.store', $tenant), [
+                'kind' => Media::KIND_DOCUMENT,
+                'file' => UploadedFile::fake()->create('dossier.pdf', 100, 'application/pdf'),
+                'display_name' => 'Dossier de candidature',
+                'tags' => 'candidature, identité',
+            ])
+            ->assertRedirect(route('admin.tenants.show', $tenant));
+
+        $this->assertDatabaseHas('media', [
+            'mediable_type' => Tenant::class,
+            'mediable_id' => $tenant->id,
+            'display_name' => 'Dossier de candidature',
+        ]);
+
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+
+        $this->actingAs($manager)
+            ->get(route('admin.tenants.show', $tenant))
+            ->assertOk();
+
+        $this->actingAs($manager)
+            ->get(route('admin.tenants.create'))
+            ->assertOk();
+
+        $this->actingAs($manager)
+            ->post(route('admin.tenants.store'), [
+                'civility' => Tenant::CIVILITY_MRS,
+                'last_name' => 'Gestionnaire',
+                'first_name' => 'Sophie',
+                'status' => Tenant::STATUS_CANDIDATE,
+            ])
+            ->assertRedirect(route('admin.tenants.index', ['status' => Tenant::STATUS_CANDIDATE]));
+    }
+
+    public function test_tenant_can_be_linked_to_a_future_user_account(): void
+    {
+        $user = User::factory()->create();
+        $tenant = Tenant::create([
+            'civility' => Tenant::CIVILITY_MRS,
+            'last_name' => 'Profil',
+            'first_name' => 'Louise',
+            'status' => Tenant::STATUS_ACTIVE,
+        ]);
+
+        $tenant->user()->associate($user);
+        $tenant->save();
+
+        $this->assertTrue($tenant->user->is($user));
+        $this->assertTrue($user->tenant->is($tenant));
     }
 
     private function admin(): User

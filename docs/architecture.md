@@ -12,9 +12,10 @@ Le périmètre actuel couvre :
 - les appartements, maisons et parkings ;
 - les adresses et leur géocodage ;
 - les photos, pièces jointes et tags ;
+- les fiches locataires et leurs documents ;
 - le back-office et ses droits d’accès.
 
-Les chambres de colocation, baux, loyers, locataires et leurs parcours seront ajoutés plus tard. Les écrans et indicateurs ne doivent pas anticiper ces données comme si elles existaient déjà.
+Les chambres de colocation, baux, loyers et parcours des locataires seront ajoutés plus tard. Les écrans et indicateurs ne doivent pas anticiper ces données comme si elles existaient déjà.
 
 ## 2. Socle technique
 
@@ -33,6 +34,7 @@ Les chambres de colocation, baux, loyers, locataires et leurs parcours seront aj
 - Dans Docker, Compose monte ce fichier précisément dans /var/www/html/database/database.sqlite. Il ne faut pas remplacer ce montage par un volume Docker pour la base.
 - Les médias sont conservés dans le volume Docker storage_data ; ils ne sont pas publiés via public/storage.
 - Les fichiers peuvent peser jusqu’à 20 Mo. PHP doit avoir upload_max_filesize = 20M et post_max_size = 24M ; le Dockerfile les applique déjà.
+- La page /admin/configuration, réservée à l’administrateur, vérifie les limites PHP, les extensions requises par Laravel et SQLite, les répertoires storage d’archivage et de travail, le fuseau et la langue. Elle est une checklist de configuration, pas une page de métriques d’exploitation.
 
 Ne pas ajouter un service MySQL, Redis, Elasticsearch ou un broker sans besoin métier explicite : cela compliquerait le déploiement et les sauvegardes sans bénéfice à cette échelle.
 
@@ -58,6 +60,8 @@ Les contrôleurs valident les entrées, appellent un service lorsque l’opérat
     BUILDING 1 ─── n PROPERTY
     ADDRESS  1 ─── 0..1 PROPERTY (maison uniquement)
     BUILDING ou PROPERTY 1 ─── n MEDIA
+    USER     0..1 ─── 1 TENANT
+    TENANT   1 ─── n MEDIA
     MEDIA n ─── n TAG
 
 | Entité | Règles à préserver |
@@ -66,8 +70,9 @@ Les contrôleurs valident les entrées, appellent un service lorsque l’opérat
 | Appartement / parking | Doit être rattaché à un immeuble ; son adresse propre est absente et l’adresse de l’immeuble est utilisée. |
 | Maison | N’est pas rattachée à un immeuble et possède sa propre adresse. |
 | Bien | A une référence unique, un type (apartment, house, parking) et un statut (active, inactive). |
+| Locataire | Dossier métier créé indépendamment d’un compte User. Il porte civilité, prénom, nom, date de naissance optionnelle et statut (candidate, validating, active, former, refused). Un compte User optionnel et unique pourra lui être rattaché pour le futur profil locataire ; aucun bail ni logement ne lui est encore rattaché. |
 | Adresse | Contient latitude, longitude et date de géocodage quand le géocodage aboutit. |
-| Média | Est polymorphiquement rattaché à un immeuble ou un bien. Une photo principale au plus est définie par propriétaire. |
+| Média | Est polymorphiquement rattaché à un immeuble, un bien ou un locataire. Une photo principale au plus est définie par propriétaire ; le locataire est limité à une photo d’identité. |
 | Tag | Est partagé entre les documents ; les tags sont synchronisés depuis une liste séparée par des virgules. |
 
 Si un changement modifie l’une de ces relations, ajouter ou adapter un test fonctionnel. Ne pas uniquement masquer une incohérence dans l’interface.
@@ -78,11 +83,13 @@ L’authentification utilise Laravel Fortify. L’inscription publique est désa
 
 | Rôle | Droits actuels |
 |---|---|
-| admin | Accès au back-office et gestion complète des immeubles et biens |
-| gestionnaire | Accès et consultation des immeubles et biens ; pas de modification à ce stade |
+| admin | Accès au back-office et gestion complète des immeubles, biens et locataires |
+| gestionnaire | Accès et consultation des immeubles et biens ; gestion complète des locataires |
 | locataire | Rôle réservé aux évolutions futures |
 
-Les permissions Spatie sont appliquées à deux niveaux : middleware de route et directives Blade @can. Les deux doivent rester alignés. Les médias suivent le droit de leur propriétaire : un fichier d’immeuble requiert le droit sur les immeubles, un fichier de bien celui sur les biens.
+Les permissions Spatie sont appliquées à deux niveaux : middleware de route et directives Blade @can. Les deux doivent rester alignés. Les médias suivent le droit de leur propriétaire : un fichier d’immeuble requiert le droit sur les immeubles, un fichier de bien celui sur les biens et un fichier de locataire celui sur les locataires.
+
+La page de configuration requiert la permission manage system, attribuée au seul rôle admin.
 
 ## 6. Médias, documents et géocodage
 
@@ -91,6 +98,7 @@ Les permissions Spatie sont appliquées à deux niveaux : middleware de route et
 - Les photos acceptent JPG, PNG et WebP ; les documents acceptent PDF, images, DOC/DOCX et XLS/XLSX.
 - La limite est de 20 Mo, contrôlée dans Laravel et PHP.
 - La première photo devient automatiquement principale. La suppression de la photo principale promeut une autre photo lorsqu’elle existe.
+- Un locataire possède au plus une photo d’identité. Cette règle est contrôlée dans l’interface et par le contrôleur ; les pièces jointes restent multiples.
 - Les téléchargements passent exclusivement par la route admin.media.download, qui vérifie les droits avant de servir le fichier.
 - La carte médias affiche d’abord les pièces jointes et leur taille, puis les photos sous forme de galerie. Le visualiseur plein format permet de naviguer entre les photos.
 
@@ -113,7 +121,8 @@ Le back-office est volontairement sobre, dense et lisible. Il n’utilise pas de
 - Boutons primaires vert sarcelle, boutons secondaires gris clair, actions destructives rouges.
 - Les actions de tableaux sont des boutons icônes, avec infobulle au survol et libellé accessible (aria-label).
 - Les listes privilégient une information scannable : référence, nom, contexte et état.
-- Les fiches utilisent un en-tête sombre pour l’identité de l’entité, puis une grille avec contenu principal et panneau latéral (carte, photo principale).
+- Les fiches utilisent un en-tête sombre pour l’identité de l’entité. Lorsqu’elle existe, la photo principale est placée dans ce bandeau, entre l’identité et les actions ; le panneau latéral reste dédié à la carte.
+- Le statut d’un locataire réutilise status-pill : candidat violet, en validation ambre, actif vert, ancien ou refusé gris.
 - Les formulaires d’ajout et d’édition de médias s’ouvrent dans des dialogues natifs ; ils ne doivent pas alourdir la fiche.
 - Les photos sont des miniatures cliquables. Une boîte de dialogue permet la consultation plein format et la navigation clavier.
 
@@ -160,5 +169,6 @@ Ne pas y afficher de taux d’occupation, loyers, échéances de bail ou donnée
 | SQLite | Acceptable | Suffisant pour le faible nombre de biens et utilisateurs. Réévaluer seulement en cas d’accès concurrents soutenus ou de besoins de reporting complexes. |
 | Fichiers locaux | À surveiller | Sauvegarder le fichier SQLite et le volume storage_data ensemble ; ils constituent une même unité de restauration. |
 | Carte et géocodage | À surveiller | Dépendance à des services publics externes ; conserver les coordonnées en base et proposer le rejeu par commande. |
-| ACL locataires | À concevoir | Les futures routes locataires devront séparer strictement leurs données de l’administration. |
+| Accès locataire | À concevoir | Le dossier Tenant ne crée pas automatiquement un compte User. Un compte peut être rattaché à un seul dossier, puis les futures routes locataires devront séparer strictement leurs données de l’administration. |
+| Conservation des dossiers | À concevoir avec les baux | Les dossiers ancien ou refusé deviendront éligibles à la suppression après deux ans sans contrat actif. Tant que les baux ne sont pas modélisés, aucune tâche planifiée ne doit supprimer ces données. status_changed_at conserve le point de départ du futur calcul. |
 | Baux et parcours | À concevoir | Introduire les nouveaux modèles avant les tableaux de bord financiers ou d’occupation. |
