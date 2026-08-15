@@ -1,42 +1,141 @@
-<div class="card media-card">
-    <h2>Photos et pièces jointes</h2>
+<section class="card media-card">
+    <div class="media-card-header">
+        <div>
+            <p class="panel-kicker">Médias</p>
+            <h2>Photos et pièces jointes</h2>
+        </div>
+        @can($managePermission)
+            <div class="media-card-actions">
+                <button class="button secondary" type="button" data-dialog-open="photo-upload-dialog">Ajouter une photo</button>
+                <button class="button" type="button" data-dialog-open="document-upload-dialog">Ajouter une pièce jointe</button>
+            </div>
+        @endcan
+    </div>
+
     @php($photos = $media->where('kind', \App\Models\Media::KIND_PHOTO))
     @php($documents = $media->where('kind', \App\Models\Media::KIND_DOCUMENT))
+
     @if ($photos->isNotEmpty())
-        <h3>Photos</h3>
+        <h3 class="media-section-title">Photos</h3>
         <div class="photo-grid">
             @foreach ($photos as $photo)
-                <div class="photo-item @if($photo->is_primary) primary @endif">
+                <article class="photo-item @if($photo->is_primary) primary @endif">
                     <img src="{{ route('admin.media.download', $photo) }}" alt="{{ $photo->display_name }}">
-                    <span>{{ $photo->is_primary ? 'Principale' : $photo->display_name }}</span>
-                    @can($managePermission)
-                        <div class="actions"><form method="POST" action="{{ route('admin.media.primary', $photo) }}">@csrf<button class="link-button" type="submit">Définir par défaut</button></form><form method="POST" action="{{ route('admin.media.destroy', $photo) }}" onsubmit="return confirm('Supprimer cette photo ?')">@csrf @method('DELETE')<button class="link-button" type="submit">Supprimer</button></form></div>
-                    @endcan
-                </div>
+                    <div class="photo-item-content">
+                        <span>{{ $photo->is_primary ? 'Photo principale' : $photo->display_name }}</span>
+                        @can($managePermission)
+                            <div class="actions photo-actions">
+                                @unless($photo->is_primary)
+                                    <form method="POST" action="{{ route('admin.media.primary', $photo) }}">
+                                        @csrf
+                                        <button class="text-action" type="submit">Définir par défaut</button>
+                                    </form>
+                                @endunless
+                                <form method="POST" action="{{ route('admin.media.destroy', $photo) }}" onsubmit="return confirm('Supprimer cette photo ?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="text-action danger-text-action" type="submit">Supprimer</button>
+                                </form>
+                            </div>
+                        @endcan
+                    </div>
+                </article>
             @endforeach
         </div>
     @endif
+
     @if ($documents->isNotEmpty())
-        <h3>Pièces jointes</h3>
-        @foreach ($documents as $document)
-            <div class="attachment-row">
-                <a href="{{ route('admin.media.download', $document) }}">{{ $document->display_name }}</a>
-                <span class="muted">{{ number_format($document->size / 1024, 0, ',', ' ') }} Ko</span>
-                @if ($document->tags->isNotEmpty())<span class="tags">{{ $document->tags->pluck('name')->join(', ') }}</span>@endif
+        <h3 class="media-section-title">Pièces jointes</h3>
+        <div class="attachment-list">
+            @foreach ($documents as $document)
+                <article class="attachment-row">
+                    <div class="attachment-info">
+                        <a href="{{ route('admin.media.download', $document) }}">{{ $document->display_name }}</a>
+                        <span>{{ number_format($document->size / 1024, 0, ',', ' ') }} Ko</span>
+                    </div>
+                    @if ($document->tags->isNotEmpty())
+                        <span class="tags">{{ $document->tags->pluck('name')->join(', ') }}</span>
+                    @endif
+                    @can($managePermission)
+                        <div class="attachment-actions">
+                            <button class="text-action" type="button" data-dialog-open="document-edit-dialog-{{ $document->id }}">Modifier</button>
+                            <form method="POST" action="{{ route('admin.media.destroy', $document) }}" onsubmit="return confirm('Supprimer cette pièce jointe ?')">
+                                @csrf
+                                @method('DELETE')
+                                <button class="text-action danger-text-action" type="submit">Supprimer</button>
+                            </form>
+                        </div>
+                    @endcan
+                </article>
+
                 @can($managePermission)
-                    <form class="attachment-edit" method="POST" action="{{ route('admin.media.update', $document) }}">@csrf @method('PUT')<input name="display_name" value="{{ $document->display_name }}" aria-label="Nom de la pièce jointe"><input name="tags" value="{{ $document->tags->pluck('name')->join(', ') }}" placeholder="Tags séparés par des virgules" aria-label="Tags"><button class="button secondary" type="submit">Enregistrer</button></form>
-                    <form method="POST" action="{{ route('admin.media.destroy', $document) }}" onsubmit="return confirm('Supprimer cette pièce jointe ?')">@csrf @method('DELETE')<button class="link-button" type="submit">Supprimer</button></form>
+                    <dialog id="document-edit-dialog-{{ $document->id }}" class="modal-dialog" aria-labelledby="document-edit-title-{{ $document->id }}">
+                        <form method="dialog" class="modal-close-form"><button type="submit" aria-label="Fermer">×</button></form>
+                        <div class="modal-content">
+                            <p class="panel-kicker">Pièce jointe</p>
+                            <h2 id="document-edit-title-{{ $document->id }}">Modifier les informations</h2>
+                            <form method="POST" action="{{ route('admin.media.update', $document) }}" class="modal-form">
+                                @csrf
+                                @method('PUT')
+                                <div class="form-field"><label for="display_name_{{ $document->id }}">Nom affiché</label><input id="display_name_{{ $document->id }}" name="display_name" value="{{ $document->display_name }}" required></div>
+                                <div class="form-field"><label for="tags_{{ $document->id }}">Tags</label><input id="tags_{{ $document->id }}" name="tags" value="{{ $document->tags->pluck('name')->join(', ') }}" placeholder="ex. bail, diagnostic, travaux"></div>
+                                <div class="form-actions"><button class="button" type="submit">Enregistrer</button><button class="button secondary" type="button" data-dialog-close>Annuler</button></div>
+                            </form>
+                        </div>
+                    </dialog>
                 @endcan
-            </div>
-        @endforeach
+            @endforeach
+        </div>
     @endif
-    @can($managePermission)
-        <form class="upload-form" method="POST" action="{{ $uploadRoute }}" enctype="multipart/form-data">
-            @csrf
-            <h3>Ajouter un fichier</h3>
-            <div class="form-grid"><div class="form-field"><label for="kind">Type</label><select id="kind" name="kind"><option value="photo">Photo</option><option value="document">Pièce jointe</option></select></div><div class="form-field"><label for="file">Fichier</label><input id="file" type="file" name="file" required></div><div class="form-field"><label for="display_name">Nom affiché</label><input id="display_name" name="display_name" placeholder="Nom du fichier par défaut"></div><div class="form-field"><label for="tags">Tags</label><input id="tags" name="tags" placeholder="ex. bail, diagnostic, travaux"></div></div>
-            <p class="hint">Photos : JPG, PNG ou WebP. Documents : PDF, images, DOCX ou XLSX. Taille maximale : 10 Mo.</p>
-            <button class="button" type="submit">Ajouter</button>
-        </form>
-    @endcan
-</div>
+
+    @if ($photos->isEmpty() && $documents->isEmpty())
+        <p class="empty compact">Aucun média n’a encore été ajouté.</p>
+    @endif
+</section>
+
+@can($managePermission)
+    <dialog id="photo-upload-dialog" class="modal-dialog" aria-labelledby="photo-upload-title">
+        <form method="dialog" class="modal-close-form"><button type="submit" aria-label="Fermer">×</button></form>
+        <div class="modal-content">
+            <p class="panel-kicker">Photos</p>
+            <h2 id="photo-upload-title">Ajouter une photo</h2>
+            <form method="POST" action="{{ $uploadRoute }}" enctype="multipart/form-data" class="modal-form">
+                @csrf
+                <input type="hidden" name="kind" value="photo">
+                <div class="form-field"><label for="photo_file">Fichier</label><input id="photo_file" type="file" name="file" accept="image/jpeg,image/png,image/webp" required></div>
+                <div class="form-field"><label for="photo_display_name">Nom affiché <span class="field-optional">(facultatif)</span></label><input id="photo_display_name" name="display_name" placeholder="Nom du fichier par défaut"></div>
+                <p class="hint">JPG, PNG ou WebP, 10 Mo maximum. La première photo ajoutée devient la photo principale.</p>
+                <div class="form-actions"><button class="button" type="submit">Ajouter la photo</button><button class="button secondary" type="button" data-dialog-close>Annuler</button></div>
+            </form>
+        </div>
+    </dialog>
+
+    <dialog id="document-upload-dialog" class="modal-dialog" aria-labelledby="document-upload-title">
+        <form method="dialog" class="modal-close-form"><button type="submit" aria-label="Fermer">×</button></form>
+        <div class="modal-content">
+            <p class="panel-kicker">Pièce jointe</p>
+            <h2 id="document-upload-title">Ajouter une pièce jointe</h2>
+            <form method="POST" action="{{ $uploadRoute }}" enctype="multipart/form-data" class="modal-form">
+                @csrf
+                <input type="hidden" name="kind" value="document">
+                <div class="form-field"><label for="document_file">Fichier</label><input id="document_file" type="file" name="file" accept="application/pdf,image/jpeg,image/png,image/webp,.doc,.docx,.xls,.xlsx" required></div>
+                <div class="form-field"><label for="document_display_name">Nom affiché <span class="field-optional">(facultatif)</span></label><input id="document_display_name" name="display_name" placeholder="Nom du fichier par défaut"></div>
+                <div class="form-field"><label for="document_tags">Tags <span class="field-optional">(facultatif)</span></label><input id="document_tags" name="tags" placeholder="ex. bail, diagnostic, travaux"></div>
+                <p class="hint">PDF, image, DOCX ou XLSX, 10 Mo maximum.</p>
+                <div class="form-actions"><button class="button" type="submit">Ajouter la pièce jointe</button><button class="button secondary" type="button" data-dialog-close>Annuler</button></div>
+            </form>
+        </div>
+    </dialog>
+
+    <script>
+        document.querySelectorAll('[data-dialog-open]').forEach((trigger) => {
+            trigger.addEventListener('click', () => document.getElementById(trigger.dataset.dialogOpen).showModal());
+        });
+        document.querySelectorAll('[data-dialog-close]').forEach((trigger) => {
+            trigger.addEventListener('click', () => trigger.closest('dialog').close());
+        });
+        document.querySelectorAll('.modal-dialog').forEach((dialog) => {
+            dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+        });
+    </script>
+@endcan
