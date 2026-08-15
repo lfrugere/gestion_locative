@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Address;
 use App\Models\Building;
-use App\Models\Property;
 use App\Models\Media;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\Property;
+use App\Models\User;
 use Illuminate\Contracts\Auth\Access\Gate;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -47,6 +47,29 @@ class AdminBackOfficeTest extends TestCase
             ->get('/admin')
             ->assertOk()
             ->assertSee('Vue d’ensemble');
+    }
+
+    public function test_dashboard_displays_the_portfolio_summary_and_recent_items(): void
+    {
+        $building = $this->createBuilding();
+        $property = Property::create([
+            'reference' => 'DASH-APT-01',
+            'name' => 'Appartement du tableau de bord',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get('/admin')
+            ->assertOk()
+            ->assertSee('Points d’attention')
+            ->assertSee('Immeubles récents')
+            ->assertSee('Biens récents')
+            ->assertSee($building->name)
+            ->assertSee($property->name)
+            ->assertSee(route('admin.buildings.create'))
+            ->assertSee(route('admin.properties.create'));
     }
 
     public function test_admin_can_create_a_building(): void

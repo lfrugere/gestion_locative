@@ -1,8 +1,9 @@
 <?php
 
 use App\Http\Controllers\Admin\BuildingController;
-use App\Http\Controllers\Admin\PropertyController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\Admin\PropertyController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -19,7 +20,7 @@ Route::middleware(['auth', 'permission:access admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        Route::view('/', 'admin.dashboard')->name('dashboard');
+        Route::get('/', DashboardController::class)->name('dashboard');
         Route::get('/media/{media}/download', [MediaController::class, 'download'])
             ->name('media.download');
 
