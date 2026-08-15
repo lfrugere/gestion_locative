@@ -2,6 +2,8 @@
 
 Application Laravel de gestion d'appartements, de chambres en colocation et du parcours des locataires.
 
+Les choix d’architecture, de métier et de design destinés aux développeurs et agents IA sont décrits dans [docs/architecture.md](docs/architecture.md).
+
 ## Prérequis locaux
 
 - PHP 8.3 ou supérieur avec l'extension SQLite activée
