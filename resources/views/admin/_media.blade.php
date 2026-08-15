@@ -128,14 +128,33 @@
     </dialog>
 
     <script>
+        const openDialog = (dialog) => {
+            if (typeof dialog.showModal === 'function') {
+                dialog.showModal();
+            } else {
+                dialog.setAttribute('open', '');
+            }
+        };
+        const closeDialog = (dialog) => {
+            if (typeof dialog.close === 'function') {
+                dialog.close();
+            } else {
+                dialog.removeAttribute('open');
+            }
+        };
         document.querySelectorAll('[data-dialog-open]').forEach((trigger) => {
-            trigger.addEventListener('click', () => document.getElementById(trigger.dataset.dialogOpen).showModal());
+            trigger.addEventListener('click', () => openDialog(document.getElementById(trigger.dataset.dialogOpen)));
         });
         document.querySelectorAll('[data-dialog-close]').forEach((trigger) => {
-            trigger.addEventListener('click', () => trigger.closest('dialog').close());
+            trigger.addEventListener('click', () => closeDialog(trigger.closest('dialog')));
         });
         document.querySelectorAll('.modal-dialog').forEach((dialog) => {
-            dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+            dialog.addEventListener('click', (event) => { if (event.target === dialog) closeDialog(dialog); });
         });
+        @if ($errors->has('file') && old('kind') === \App\Models\Media::KIND_PHOTO)
+            openDialog(document.getElementById('photo-upload-dialog'));
+        @elseif ($errors->has('file') && old('kind') === \App\Models\Media::KIND_DOCUMENT)
+            openDialog(document.getElementById('document-upload-dialog'));
+        @endif
     </script>
 @endcan

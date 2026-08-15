@@ -184,6 +184,16 @@
                 @if (session('error'))
                     <div class="errors" role="alert">{{ session('error') }}</div>
                 @endif
+                @if ($errors->any())
+                    <div class="errors" role="alert">
+                        <strong>Le formulaire contient des erreurs :</strong>
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 @yield('content')
             </main>
         </div>
