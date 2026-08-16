@@ -32,9 +32,11 @@ Les chambres de colocation, baux, loyers et parcours des locataires seront ajout
 ### Exécution locale et conteneurisée
 
 - En local, le fichier SQLite est configuré par SQLITE_DATABASE_PATH.
+- Le fichier Compose principal utilise l’image publiée dans GHCR via APP_IMAGE. Le fichier explicite `compose.local.yaml` ajoute uniquement le build local ; il ne doit pas être utilisé lors d’un déploiement depuis GHCR.
 - Dans Docker, Compose monte ce fichier précisément dans /var/www/html/database/database.sqlite. Il ne faut pas remplacer ce montage par un volume Docker pour la base.
 - Les médias sont conservés dans le volume Docker storage_data ; ils ne sont pas publiés via public/storage.
 - Le workflow `.github/workflows/publish-image.yml` publie `ghcr.io/lfrugere/gestion_locative:latest` et un tag égal au SHA complet du commit. L’image ne contient ni fichier `.env`, ni base SQLite, ni médias ; Compose fournit ces données au démarrage.
+- L’entrypoint Docker exécute `php artisan migrate --force`, puis `php artisan db:seed --force`, avant Apache. Le seeder est idempotent : les rôles et permissions sont retrouvés ou créés, et le compte administrateur existant par e-mail est mis à jour depuis `ADMIN_NAME` et `ADMIN_PASSWORD`.
 - Les fichiers peuvent peser jusqu’à 20 Mo. PHP doit avoir upload_max_filesize = 20M et post_max_size = 24M ; le Dockerfile les applique déjà.
 - La page /admin/configuration, réservée à l’administrateur, vérifie les limites PHP, les extensions requises par Laravel et SQLite, les répertoires storage d’archivage et de travail, le fuseau et la langue. Elle est une checklist de configuration, pas une page de métriques d’exploitation.
 

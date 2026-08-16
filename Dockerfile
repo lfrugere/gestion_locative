@@ -21,6 +21,9 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --no-progress --prefer-dist --no-scripts
 
@@ -30,5 +33,7 @@ RUN composer dump-autoload --no-dev --optimize
 
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache database \
     && chown -R www-data:www-data storage bootstrap/cache database
+
+ENTRYPOINT ["entrypoint.sh"]
 
 EXPOSE 80

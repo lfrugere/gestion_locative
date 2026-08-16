@@ -1,8 +1,6 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${APP_IMAGE:-ghcr.io/lfrugere/gestion_locative:latest}
     ports:
       - "${APP_PORT:-8000}:80"
     environment:
