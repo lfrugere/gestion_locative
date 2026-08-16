@@ -6,10 +6,18 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Str;
 
 #[Fillable(['civility', 'last_name', 'first_name', 'birth_date', 'status', 'status_changed_at'])]
 class Tenant extends Model
 {
+    protected static function booted(): void
+    {
+        static::creating(function (Tenant $tenant): void {
+            $tenant->storage_key ??= (string) Str::ulid();
+        });
+    }
+
     public const CIVILITY_MR = 'mr';
 
     public const CIVILITY_MRS = 'mrs';

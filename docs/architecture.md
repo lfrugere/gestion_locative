@@ -104,6 +104,10 @@ La page de configuration requiert la permission manage system, attribuée au seu
 - La première photo devient automatiquement principale. La suppression de la photo principale promeut une autre photo lorsqu’elle existe.
 - Un locataire possède au plus une photo d’identité. Cette règle est contrôlée dans l’interface et par le contrôleur ; les pièces jointes restent multiples.
 - Les téléchargements passent exclusivement par la route admin.media.download, qui vérifie les droits avant de servir le fichier.
+- Chaque média possède un kind technique (photo ou document) et un type métier (identity, bank_details, insurance, diagnostics ou other selon le propriétaire).
+- Les photos sont stockées sous media/<type_proprietaire>/<reference_ou_ulid>/photos. Les documents sont stockés dans le répertoire correspondant à leur type.
+- Les immeubles et biens utilisent leur référence comme identifiant de stockage ; les locataires utilisent une clé ULID technique stable, afin de ne pas exposer ni dépendre de leur identité civile dans les chemins.
+- Les nouveaux fichiers utilisent un nom UUID et restent sur le disque Laravel privé. La modification du type déplace le fichier vers le répertoire correspondant.
 - La carte médias affiche d’abord les pièces jointes et leur taille, puis les photos sous forme de galerie. Le visualiseur plein format permet de naviguer entre les photos.
 
 ### Géocodage

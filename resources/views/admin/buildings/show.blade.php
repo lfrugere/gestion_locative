@@ -49,7 +49,7 @@
                 @endif
             </section>
 
-            @include('admin._media', ['media' => $building->media, 'managePermission' => 'manage buildings', 'uploadRoute' => route('admin.buildings.media.store', $building)])
+            @include('admin._media', ['media' => $building->media, 'mediable' => $building, 'managePermission' => 'manage buildings', 'uploadRoute' => route('admin.buildings.media.store', $building)])
 
             @can('manage buildings')
                 <form class="danger-zone" method="POST" action="{{ route('admin.buildings.destroy', $building) }}" onsubmit="return confirm('Supprimer cet immeuble ?')">

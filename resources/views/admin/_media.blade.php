@@ -1,5 +1,6 @@
 @php($photos = $media->where('kind', \App\Models\Media::KIND_PHOTO)->values())
 @php($documents = $media->where('kind', \App\Models\Media::KIND_DOCUMENT))
+@php($mediaTypes = \App\Models\Media::documentTypesFor($mediable))
 @php($singlePhoto = $singlePhoto ?? false)
 
 <section class="card media-card">
@@ -25,7 +26,7 @@
                 <article class="attachment-row">
                     <div class="attachment-info">
                         <a href="{{ route('admin.media.download', $document) }}">{{ $document->display_name }}</a>
-                        <span>{{ number_format($document->size / 1024, 0, ',', ' ') }} Ko</span>
+                        <span>{{ $document->typeLabel() }} · {{ number_format($document->size / 1024, 0, ',', ' ') }} Ko</span>
                     </div>
                     @if ($document->tags->isNotEmpty())
                         <span class="tags">{{ $document->tags->pluck('name')->join(', ') }}</span>
@@ -51,6 +52,7 @@
                             <form method="POST" action="{{ route('admin.media.update', $document) }}" class="modal-form">
                                 @csrf
                                 @method('PUT')
+                                <div class="form-field"><label for="type_{{ $document->id }}">Type de pièce jointe</label><select id="type_{{ $document->id }}" name="type" required>@foreach ($mediaTypes as $type)<option value="{{ $type }}" @selected($document->type === $type)>{{ \App\Models\Media::TYPE_LABELS[$type] }}</option>@endforeach</select></div>
                                 <div class="form-field"><label for="display_name_{{ $document->id }}">Nom affiché</label><input id="display_name_{{ $document->id }}" name="display_name" value="{{ $document->display_name }}" required></div>
                                 <div class="form-field"><label for="tags_{{ $document->id }}">Tags</label><input id="tags_{{ $document->id }}" name="tags" value="{{ $document->tags->pluck('name')->join(', ') }}" placeholder="ex. bail, diagnostic, travaux"></div>
                                 <div class="form-actions"><button class="button" type="submit">Enregistrer</button><button class="button secondary" type="button" data-dialog-close>Annuler</button></div>
@@ -139,6 +141,7 @@
                 @csrf
                 <input type="hidden" name="kind" value="document">
                 <div class="form-field"><label for="document_file">Fichier</label><input id="document_file" type="file" name="file" accept="application/pdf,image/jpeg,image/png,image/webp,.doc,.docx,.xls,.xlsx" required></div>
+                <div class="form-field"><label for="document_type">Type de pièce jointe</label><select id="document_type" name="type" required>@foreach ($mediaTypes as $type)<option value="{{ $type }}">{{ \App\Models\Media::TYPE_LABELS[$type] }}</option>@endforeach</select></div>
                 <div class="form-field"><label for="document_display_name">Nom affiché <span class="field-optional">(facultatif)</span></label><input id="document_display_name" name="display_name" placeholder="Nom du fichier par défaut"></div>
                 <div class="form-field"><label for="document_tags">Tags <span class="field-optional">(facultatif)</span></label><input id="document_tags" name="tags" placeholder="ex. bail, diagnostic, travaux"></div>
                 <p class="hint">PDF, image, DOCX ou XLSX, 20 Mo maximum.</p>

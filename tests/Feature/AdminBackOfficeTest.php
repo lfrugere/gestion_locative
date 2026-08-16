@@ -301,6 +301,7 @@ class AdminBackOfficeTest extends TestCase
         $this->actingAs($admin)
             ->post(route('admin.properties.media.store', $property), [
                 'kind' => Media::KIND_DOCUMENT,
+                'type' => Media::TYPE_DIAGNOSTICS,
                 'file' => UploadedFile::fake()->create('diagnostic.pdf', 100, 'application/pdf'),
                 'display_name' => 'Diagnostic énergétique',
                 'tags' => 'diagnostic, énergie',
@@ -308,6 +309,8 @@ class AdminBackOfficeTest extends TestCase
             ->assertRedirect(route('admin.properties.show', $property));
 
         $document = Media::where('kind', Media::KIND_DOCUMENT)->firstOrFail();
+        $this->assertSame(Media::TYPE_DIAGNOSTICS, $document->type);
+        $this->assertStringContainsString('media/property/MEDIA-01/diagnostics/', $document->path);
         $this->assertSame('Diagnostic énergétique', $document->display_name);
         $this->assertDatabaseHas('tags', ['name' => 'diagnostic']);
         $this->assertDatabaseHas('tags', ['name' => 'énergie']);
@@ -458,6 +461,7 @@ class AdminBackOfficeTest extends TestCase
         $this->actingAs($admin)
             ->post(route('admin.tenants.media.store', $tenant), [
                 'kind' => Media::KIND_DOCUMENT,
+                'type' => Media::TYPE_IDENTITY,
                 'file' => UploadedFile::fake()->create('dossier.pdf', 100, 'application/pdf'),
                 'display_name' => 'Dossier de candidature',
                 'tags' => 'candidature, identité',
@@ -467,8 +471,10 @@ class AdminBackOfficeTest extends TestCase
         $this->assertDatabaseHas('media', [
             'mediable_type' => Tenant::class,
             'mediable_id' => $tenant->id,
+            'type' => Media::TYPE_IDENTITY,
             'display_name' => 'Dossier de candidature',
         ]);
+        $this->assertStringContainsString('media/tenant/'.$tenant->storage_key.'/identity/', Media::where('mediable_id', $tenant->id)->where('type', Media::TYPE_IDENTITY)->value('path'));
 
         $manager = User::factory()->create();
         $manager->assignRole('gestionnaire');
