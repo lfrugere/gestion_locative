@@ -17,6 +17,9 @@
             <figure class="detail-hero-photo"><img src="{{ route('admin.media.download', $primaryPhoto) }}" alt="{{ $primaryPhoto->display_name }}"></figure>
         @endif
         <div class="detail-hero-actions">
+            @if ($property->is_shared_accommodation)
+                <span class="status-pill status-active">Colocation</span>
+            @endif
             <span class="status-pill {{ $property->status === 'active' ? 'status-active' : 'status-muted' }}">{{ $property->status === 'active' ? 'Actif' : 'Inactif' }}</span>
             @can('manage properties')
                 <a class="button secondary" href="{{ route('admin.properties.edit', $property) }}">Modifier</a>
@@ -28,11 +31,12 @@
         <div class="detail-main">
             <section class="detail-panel">
                 <div class="panel-heading"><div><span class="panel-kicker">Vue d’ensemble</span><h2>Caractéristiques du bien</h2></div><span class="panel-icon">⌂</span></div>
-                <div class="metric-grid">
+                <div class="metric-grid property-metric-grid">
                     <div class="metric"><span>Type</span><strong>{{ $property->typeLabel() }}</strong></div>
                     <div class="metric"><span>Statut</span><strong>{{ $property->status === 'active' ? 'Actif' : 'Inactif' }}</strong></div>
                     <div class="metric"><span>Étage</span><strong>{{ $property->floor ?: '—' }}</strong></div>
                     <div class="metric"><span>Surface</span><strong>{{ $property->surface_m2 ? $property->surface_m2.' m²' : '—' }}</strong></div>
+                    <div class="metric"><span>Usage</span><strong>{{ $property->is_shared_accommodation ? 'Colocation' : 'Classique' }}</strong></div>
                 </div>
             </section>
 
@@ -45,6 +49,32 @@
                 @endif
                 @if ($property->notes)<div class="notes-block"><span>Notes</span><p>{{ $property->notes }}</p></div>@endif
             </section>
+
+            @if ($property->canHaveRooms())
+                <section class="detail-panel">
+                    <div class="panel-heading">
+                        <div><span class="panel-kicker">Colocation</span><h2>Pièces</h2></div>
+                        @can('manage properties')
+                            <a class="button secondary" href="{{ route('admin.property-rooms.create', $property) }}">Ajouter une pièce</a>
+                        @endcan
+                    </div>
+                    @forelse ($property->rooms as $room)
+                        @php($roomPhoto = $room->media->first(fn ($media) => $media->isPhoto() && $media->is_primary))
+                        <a class="associated-row room-row" href="{{ route('admin.property-rooms.show', [$property, $room]) }}">
+                            @if ($roomPhoto)
+                                <img class="list-thumb" src="{{ route('admin.media.download', $roomPhoto) }}" alt="">
+                            @else
+                                <span class="entity-mark">P</span>
+                            @endif
+                            <span><strong>{{ $room->name }}</strong><small>{{ $room->typeLabel() }}@if($room->surface_m2) · {{ $room->surface_m2 }} m²@endif</small></span>
+                            <span class="status-pill {{ $room->status === 'active' ? 'status-active' : 'status-muted' }}">{{ $room->status === 'active' ? 'Active' : 'Inactive' }}</span>
+                            <span class="row-arrow">→</span>
+                        </a>
+                    @empty
+                        <p class="empty compact">Aucune pièce n’a encore été ajoutée.</p>
+                    @endforelse
+                </section>
+            @endif
 
             @include('admin._media', ['media' => $property->media, 'managePermission' => 'manage properties', 'uploadRoute' => route('admin.properties.media.store', $property)])
 

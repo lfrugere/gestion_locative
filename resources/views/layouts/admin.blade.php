@@ -36,6 +36,9 @@
             .form-field.full { grid-column: 1 / -1; }
             label { display: block; margin-bottom: 7px; color: #344054; font-size: .9rem; font-weight: 700; }
             input, select, textarea { width: 100%; padding: 9px 11px; border: 1px solid #d0d5dd; border-radius: 8px; color: #1d2939; background: #fff; font: inherit; }
+            .checkbox-field { display: flex; align-items: flex-start; gap: 10px; padding: 11px 12px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; }
+            .checkbox-field input { width: auto; margin-top: 3px; }
+            .checkbox-field label { margin: 0; }
             textarea { min-height: 100px; resize: vertical; }
             input:focus, select:focus, textarea:focus { border-color: #2a9d8f; outline: 3px solid rgba(42, 157, 143, .14); }
             .errors { margin-bottom: 20px; padding: 12px 15px; border-radius: 9px; color: #b42318; background: #fff3f2; }
@@ -110,6 +113,7 @@
             .entity-mark { display: grid; width: 35px; height: 35px; place-items: center; border-radius: 10px; color: #164e63; background: #e5f4fa; font-size: .82rem; font-weight: 850; }
             .row-arrow { color: #829ab1; font-size: 1.15rem; }
             .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid #edf1f5; border-radius: 12px; overflow: hidden; }
+            .property-metric-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
             .metric { min-height: 86px; padding: 15px; border-right: 1px solid #edf1f5; }
             .metric:last-child { border-right: 0; }
             .metric span { display: block; color: #829ab1; font-size: .76rem; font-weight: 700; }

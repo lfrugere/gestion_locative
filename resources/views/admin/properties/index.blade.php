@@ -19,7 +19,7 @@
         @else
             <table>
                 <thead>
-                    <tr><th>Photo</th><th>Référence</th><th>Type</th><th>Nom</th><th>Immeuble / adresse</th><th>Statut</th><th>Actions</th></tr>
+                    <tr><th>Photo</th><th>Référence</th><th>Type</th><th>Nom</th><th>Immeuble / adresse</th><th>Usage</th><th>Statut</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                     @foreach ($properties as $property)
@@ -37,6 +37,7 @@
                                     —
                                 @endif
                             </td>
+                            <td>@if($property->is_shared_accommodation)<span class="status-pill status-active">Colocation</span>@else<span class="muted">Classique</span>@endif</td>
                             <td>{{ $property->status === 'active' ? 'Actif' : 'Inactif' }}</td>
                             <td class="actions">
                                 @can('manage properties')
