@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Building;
 use App\Models\Media;
 use App\Models\Property;
+use App\Models\PropertyRoom;
 use App\Models\Tag;
 use App\Models\Tenant;
 use Illuminate\Http\UploadedFile;
@@ -45,6 +46,7 @@ class MediaManager
         $owner = match (true) {
             $mediable instanceof Building => 'building/'.$mediable->reference,
             $mediable instanceof Property => 'property/'.$mediable->reference,
+            $mediable instanceof PropertyRoom => 'property/'.$mediable->property->reference.'/room/'.$mediable->id,
             $mediable instanceof Tenant => 'tenant/'.$mediable->storage_key,
             default => throw new \InvalidArgumentException('Type de propriétaire de média non supporté.'),
         };

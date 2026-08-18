@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\NoteController;
 use App\Http\Controllers\Admin\PropertyController;
+use App\Http\Controllers\Admin\PropertyRoomController;
 use App\Http\Controllers\Admin\SystemCheckController;
 use App\Http\Controllers\Admin\TenantController;
 use Illuminate\Support\Facades\Route;
@@ -66,6 +67,9 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::get('/properties/{property}', [PropertyController::class, 'show'])
                 ->whereNumber('property')
                 ->name('properties.show');
+            Route::get('/properties/{property}/rooms/{room}', [PropertyRoomController::class, 'show'])
+                ->whereNumber(['property', 'room'])
+                ->name('property-rooms.show');
         });
 
         Route::middleware('permission:manage properties')->group(function () {
@@ -88,6 +92,27 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::post('/properties/{property}/notes', [NoteController::class, 'storeProperty'])
                 ->whereNumber('property')
                 ->name('properties.notes.store');
+            Route::get('/properties/{property}/rooms/create', [PropertyRoomController::class, 'create'])
+                ->whereNumber('property')
+                ->name('property-rooms.create');
+            Route::post('/properties/{property}/rooms', [PropertyRoomController::class, 'store'])
+                ->whereNumber('property')
+                ->name('property-rooms.store');
+            Route::get('/properties/{property}/rooms/{room}/edit', [PropertyRoomController::class, 'edit'])
+                ->whereNumber(['property', 'room'])
+                ->name('property-rooms.edit');
+            Route::put('/properties/{property}/rooms/{room}', [PropertyRoomController::class, 'update'])
+                ->whereNumber(['property', 'room'])
+                ->name('property-rooms.update');
+            Route::delete('/properties/{property}/rooms/{room}', [PropertyRoomController::class, 'destroy'])
+                ->whereNumber(['property', 'room'])
+                ->name('property-rooms.destroy');
+            Route::post('/properties/{property}/rooms/{room}/media', [MediaController::class, 'storePropertyRoom'])
+                ->whereNumber(['property', 'room'])
+                ->name('property-rooms.media.store');
+            Route::post('/properties/{property}/rooms/{room}/notes', [NoteController::class, 'storePropertyRoom'])
+                ->whereNumber(['property', 'room'])
+                ->name('property-rooms.notes.store');
         });
 
         Route::middleware('permission:view tenants')->group(function () {

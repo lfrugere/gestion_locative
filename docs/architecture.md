@@ -10,6 +10,8 @@ Le périmètre actuel couvre :
 
 - les immeubles ;
 - les appartements, maisons et parkings ;
+- le marquage d’un appartement ou d’une maison comme colocation ;
+- les pièces des biens en colocation ;
 - les adresses et leur géocodage ;
 - les photos, pièces jointes et tags ;
 - les fiches locataires et leurs documents ;
@@ -63,7 +65,9 @@ Les contrôleurs valident les entrées, appellent un service lorsque l’opérat
     ADDRESS 1 ─── 1 BUILDING
     BUILDING 1 ─── n PROPERTY
     ADDRESS  1 ─── 0..1 PROPERTY (maison uniquement)
+    PROPERTY 1 ─── n PROPERTY_ROOM (colocation uniquement)
     BUILDING ou PROPERTY 1 ─── n MEDIA
+    PROPERTY_ROOM 1 ─── n MEDIA
     USER     0..1 ─── 1 TENANT
     TENANT   1 ─── n MEDIA
     MEDIA n ─── n TAG
@@ -73,10 +77,11 @@ Les contrôleurs valident les entrées, appellent un service lorsque l’opérat
 | Immeuble | Possède toujours une adresse propre et une référence unique. Sa suppression est interdite tant que des biens y sont rattachés. |
 | Appartement / parking | Doit être rattaché à un immeuble ; son adresse propre est absente et l’adresse de l’immeuble est utilisée. |
 | Maison | N’est pas rattachée à un immeuble et possède sa propre adresse. |
-| Bien | A une référence unique, un type (apartment, house, parking) et un statut (active, inactive). |
+| Bien | A une référence unique, un type (apartment, house, parking), un statut (active, inactive) et peut être marqué comme colocation uniquement s’il s’agit d’un appartement ou d’une maison. La colocation ne peut pas être désactivée tant que des pièces sont rattachées au bien. |
+| Pièce de colocation | Appartient à un bien marqué comme colocation. Elle représente une chambre ou une pièce commune (salon, cuisine, salle de bain, WC, autre), avec surface optionnelle, statut et notes. Elle ne porte aucun bail, loyer ni affectation de locataire. |
 | Locataire | Dossier métier créé indépendamment d’un compte User. Il porte civilité, prénom, nom, date de naissance optionnelle et statut (candidate, validating, active, former, refused). Un compte User optionnel et unique pourra lui être rattaché pour le futur profil locataire ; aucun bail ni logement ne lui est encore rattaché. |
 | Adresse | Contient latitude, longitude et date de géocodage quand le géocodage aboutit. |
-| Média | Est polymorphiquement rattaché à un immeuble, un bien ou un locataire. Une photo principale au plus est définie par propriétaire ; le locataire est limité à une photo d’identité. |
+| Média | Est polymorphiquement rattaché à un immeuble, un bien, une pièce de colocation ou un locataire. Une photo principale au plus est définie par propriétaire ; le locataire est limité à une photo d’identité. |
 | Tag | Est partagé entre les documents ; les tags sont synchronisés depuis une liste séparée par des virgules. |
 
 Si un changement modifie l’une de ces relations, ajouter ou adapter un test fonctionnel. Ne pas uniquement masquer une incohérence dans l’interface.
@@ -179,4 +184,4 @@ Ne pas y afficher de taux d’occupation, loyers, échéances de bail ou donnée
 | Carte et géocodage | À surveiller | Dépendance à des services publics externes ; conserver les coordonnées en base et proposer le rejeu par commande. |
 | Accès locataire | À concevoir | Le dossier Tenant ne crée pas automatiquement un compte User. Un compte peut être rattaché à un seul dossier, puis les futures routes locataires devront séparer strictement leurs données de l’administration. |
 | Conservation des dossiers | À concevoir avec les baux | Les dossiers ancien ou refusé deviendront éligibles à la suppression après deux ans sans contrat actif. Tant que les baux ne sont pas modélisés, aucune tâche planifiée ne doit supprimer ces données. status_changed_at conserve le point de départ du futur calcul. |
-| Baux et parcours | À concevoir | Introduire les nouveaux modèles avant les tableaux de bord financiers ou d’occupation. |
+| Baux et parcours | À concevoir | Introduire les nouveaux modèles avant les tableaux de bord financiers ou d’occupation. La colocation et ses pièces restent pour l’instant un inventaire du bien ; elles ne créent pas encore d’occupants, de baux ou de loyers partagés. |

@@ -34,7 +34,14 @@ class PropertyController extends Controller
     public function show(Property $property): View
     {
         return view('admin.properties.show', [
-            'property' => $property->load(['building.address', 'address', 'media.tags', 'notes.author', 'notes.editor']),
+            'property' => $property->load([
+                'building.address',
+                'address',
+                'media.tags',
+                'rooms.media',
+                'notes.author',
+                'notes.editor',
+            ]),
         ]);
     }
 
@@ -95,11 +102,19 @@ class PropertyController extends Controller
             'address.country' => [Rule::requiredIf($type === Property::TYPE_HOUSE), 'nullable', 'string', 'size:2'],
             'floor' => ['nullable', 'string', 'max:30'],
             'surface_m2' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            'is_shared_accommodation' => ['sometimes', 'boolean', Rule::prohibitedIf($type === Property::TYPE_PARKING)],
             'status' => ['required', Rule::in(['active', 'inactive'])],
         ]);
 
+        $isSharedAccommodation = $type !== Property::TYPE_PARKING && $request->boolean('is_shared_accommodation');
+        if ($property && ! $isSharedAccommodation && $property->rooms()->exists()) {
+            return back()->withInput()->withErrors([
+                'is_shared_accommodation' => 'Impossible de désactiver la colocation tant que des pièces sont rattachées à ce bien.',
+            ]);
+        }
+
         $addressId = null;
-        DB::transaction(function () use ($validated, $type, $property, &$addressId): void {
+        DB::transaction(function () use ($validated, $type, $property, $isSharedAccommodation, &$addressId): void {
             $addressId = null;
 
             if ($type === Property::TYPE_HOUSE) {
@@ -123,6 +138,7 @@ class PropertyController extends Controller
                 'address_id' => $addressId,
                 'floor' => $validated['floor'] ?? null,
                 'surface_m2' => $validated['surface_m2'] ?? null,
+                'is_shared_accommodation' => $isSharedAccommodation,
                 'status' => $validated['status'],
             ];
 

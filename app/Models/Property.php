@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable([
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
     'address_id',
     'floor',
     'surface_m2',
+    'is_shared_accommodation',
     'status',
 ])]
 class Property extends Model
@@ -41,7 +43,21 @@ class Property extends Model
     {
         return [
             'surface_m2' => 'decimal:2',
+            'is_shared_accommodation' => 'boolean',
         ];
+    }
+
+    public function canBeSharedAccommodation(): bool
+    {
+        return in_array($this->type, [
+            self::TYPE_APARTMENT,
+            self::TYPE_HOUSE,
+        ], true);
+    }
+
+    public function canHaveRooms(): bool
+    {
+        return $this->is_shared_accommodation && $this->canBeSharedAccommodation();
     }
 
     public function address(): BelongsTo
@@ -62,6 +78,11 @@ class Property extends Model
     public function notes(): MorphMany
     {
         return $this->morphMany(Note::class, 'notable')->latest();
+    }
+
+    public function rooms(): HasMany
+    {
+        return $this->hasMany(PropertyRoom::class);
     }
 
     public function typeLabel(): string

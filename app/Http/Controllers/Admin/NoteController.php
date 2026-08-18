@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Building;
 use App\Models\Note;
 use App\Models\Property;
+use App\Models\PropertyRoom;
 use App\Models\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,13 @@ class NoteController extends Controller
     public function storeProperty(Request $request, Property $property): RedirectResponse
     {
         return $this->store($request, $property, 'admin.properties.show');
+    }
+
+    public function storePropertyRoom(Request $request, Property $property, PropertyRoom $room): RedirectResponse
+    {
+        abort_unless($room->property_id === $property->id, 404);
+
+        return $this->store($request, $room, 'admin.property-rooms.show', [$property, $room]);
     }
 
     public function storeTenant(Request $request, Tenant $tenant): RedirectResponse
@@ -52,7 +60,7 @@ class NoteController extends Controller
         return back()->with('success', 'La note a été supprimée.');
     }
 
-    private function store(Request $request, object $notable, string $route): RedirectResponse
+    private function store(Request $request, object $notable, string $route, ?array $parameters = null): RedirectResponse
     {
         $validated = $request->validate([
             'body' => ['required', 'string', 'max:5000'],
@@ -63,7 +71,7 @@ class NoteController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        return to_route($route, $notable)->with('success', 'La note a été ajoutée.');
+        return to_route($route, $parameters ?? $notable)->with('success', 'La note a été ajoutée.');
     }
 
     private function canModify(Note $note): bool
@@ -73,6 +81,7 @@ class NoteController extends Controller
         $hasParentPermission = match ($note->notable_type) {
             Building::class => $user->can('manage buildings'),
             Property::class => $user->can('manage properties'),
+            PropertyRoom::class => $user->can('manage properties'),
             Tenant::class => $user->can('manage tenants'),
             default => false,
         };

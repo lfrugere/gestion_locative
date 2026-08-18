@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Building;
 use App\Models\Media;
 use App\Models\Property;
+use App\Models\PropertyRoom;
 use App\Models\Tenant;
 use App\Services\MediaManager;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +25,13 @@ class MediaController extends Controller
     public function storeProperty(Request $request, Property $property, MediaManager $manager): RedirectResponse
     {
         return $this->store($request, $property, $manager, 'admin.properties.show');
+    }
+
+    public function storePropertyRoom(Request $request, Property $property, PropertyRoom $room, MediaManager $manager): RedirectResponse
+    {
+        abort_unless($room->property_id === $property->id, 404);
+
+        return $this->store($request, $room, $manager, 'admin.property-rooms.show', [$property, $room]);
     }
 
     public function storeTenant(Request $request, Tenant $tenant, MediaManager $manager): RedirectResponse
@@ -78,7 +86,7 @@ class MediaController extends Controller
         return Storage::disk($media->disk)->download($media->path, $media->display_name);
     }
 
-    private function store(Request $request, object $mediable, MediaManager $manager, string $route): RedirectResponse
+    private function store(Request $request, object $mediable, MediaManager $manager, string $route, ?array $parameters = null): RedirectResponse
     {
         $kind = $request->string('kind')->toString();
         $defaultType = $kind === Media::KIND_PHOTO ? Media::TYPE_PHOTOS : Media::TYPE_OTHER;
@@ -102,7 +110,7 @@ class MediaController extends Controller
 
         $manager->store($mediable, $validated['file'], $validated['kind'], $type, $validated['display_name'] ?? null, $validated['tags'] ?? null);
 
-        return to_route($route, $mediable)->with('success', 'Le fichier a été ajouté.');
+        return to_route($route, $parameters ?? $mediable)->with('success', 'Le fichier a été ajouté.');
     }
 
     private function canView(Media $media): bool
@@ -110,6 +118,7 @@ class MediaController extends Controller
         return match ($media->mediable_type) {
             Building::class => auth()->user()->can('view buildings'),
             Property::class => auth()->user()->can('view properties'),
+            PropertyRoom::class => auth()->user()->can('view properties'),
             Tenant::class => auth()->user()->can('view tenants'),
             default => false,
         };
@@ -120,6 +129,7 @@ class MediaController extends Controller
         return match ($media->mediable_type) {
             Building::class => auth()->user()->can('manage buildings'),
             Property::class => auth()->user()->can('manage properties'),
+            PropertyRoom::class => auth()->user()->can('manage properties'),
             Tenant::class => auth()->user()->can('manage tenants'),
             default => false,
         };
