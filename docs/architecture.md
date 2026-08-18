@@ -14,6 +14,7 @@ Le périmètre actuel couvre :
 - les pièces des biens en colocation ;
 - les adresses et leur géocodage ;
 - les photos, pièces jointes et tags ;
+- les notes horodatées et attribuées sur les immeubles, les biens, les pièces de colocation et les locataires ;
 - les fiches locataires et leurs documents ;
 - le back-office et ses droits d’accès.
 
@@ -70,6 +71,7 @@ Les contrôleurs valident les entrées, appellent un service lorsque l’opérat
     PROPERTY_ROOM 1 ─── n MEDIA
     USER     0..1 ─── 1 TENANT
     TENANT   1 ─── n MEDIA
+    BUILDING, PROPERTY, PROPERTY_ROOM ou TENANT 1 ─── n NOTE
     MEDIA n ─── n TAG
 
 | Entité | Règles à préserver |
@@ -78,10 +80,11 @@ Les contrôleurs valident les entrées, appellent un service lorsque l’opérat
 | Appartement / parking | Doit être rattaché à un immeuble ; son adresse propre est absente et l’adresse de l’immeuble est utilisée. |
 | Maison | N’est pas rattachée à un immeuble et possède sa propre adresse. |
 | Bien | A une référence unique, un type (apartment, house, parking), un statut (active, inactive) et peut être marqué comme colocation uniquement s’il s’agit d’un appartement ou d’une maison. La colocation ne peut pas être désactivée tant que des pièces sont rattachées au bien. |
-| Pièce de colocation | Appartient à un bien marqué comme colocation. Elle représente une chambre ou une pièce commune (salon, cuisine, salle de bain, WC, autre), avec surface optionnelle, statut et notes. Elle ne porte aucun bail, loyer ni affectation de locataire. |
+| Pièce de colocation | Appartient à un bien marqué comme colocation. Elle représente une chambre ou une pièce commune (salon, cuisine, salle de bain, WC, autre), avec surface optionnelle et statut. Elle ne porte aucun bail, loyer ni affectation de locataire. |
 | Locataire | Dossier métier créé indépendamment d’un compte User. Il porte civilité, prénom, nom, date de naissance optionnelle et statut (candidate, validating, active, former, refused). Un compte User optionnel et unique pourra lui être rattaché pour le futur profil locataire ; aucun bail ni logement ne lui est encore rattaché. |
 | Adresse | Contient latitude, longitude et date de géocodage quand le géocodage aboutit. |
 | Média | Est polymorphiquement rattaché à un immeuble, un bien, une pièce de colocation ou un locataire. Une photo principale au plus est définie par propriétaire ; le locataire est limité à une photo d’identité. |
+| Note | Est rattachée à un immeuble, un bien, une pièce de colocation ou un locataire. Porte un texte, l’auteur et la date de création, puis l’auteur et la date de dernière modification lorsqu’elle a été modifiée. Seuls son auteur ou le rôle admin peuvent la modifier ou la supprimer. |
 | Tag | Est partagé entre les documents ; les tags sont synchronisés depuis une liste séparée par des virgules. |
 
 Si un changement modifie l’une de ces relations, ajouter ou adapter un test fonctionnel. Ne pas uniquement masquer une incohérence dans l’interface.
@@ -96,7 +99,7 @@ L’authentification utilise Laravel Fortify. L’inscription publique est désa
 | gestionnaire | Accès et consultation des immeubles et biens ; gestion complète des locataires |
 | locataire | Rôle réservé aux évolutions futures |
 
-Les permissions Spatie sont appliquées à deux niveaux : middleware de route et directives Blade @can. Les deux doivent rester alignés. Les médias suivent le droit de leur propriétaire : un fichier d’immeuble requiert le droit sur les immeubles, un fichier de bien celui sur les biens et un fichier de locataire celui sur les locataires.
+Les permissions Spatie sont appliquées à deux niveaux : middleware de route et directives Blade @can. Les deux doivent rester alignés. Les médias suivent le droit de leur propriétaire : un fichier d’immeuble requiert le droit sur les immeubles, un fichier de bien celui sur les biens et un fichier de locataire celui sur les locataires. Les notes suivent la même règle pour être ajoutées ; les modifier ou les supprimer est en plus réservé à leur auteur ou au rôle admin, même pour un utilisateur qui dispose du droit de gérer l’entité porteuse.
 
 La page de configuration requiert la permission manage system, attribuée au seul rôle admin.
 
@@ -121,6 +124,12 @@ La page de configuration requiert la permission manage system, attribuée au seu
 - La commande php artisan addresses:geocode permet de traiter les adresses existantes ; --force relance celles déjà géocodées.
 - Une absence de coordonnées n’est pas bloquante : l’interface explique que la carte est indisponible et le tableau de bord le signale.
 - Les appels externes de géocodage peuvent échouer. Ne jamais empêcher la création d’un immeuble ou d’une maison à cause de cette indisponibilité.
+
+### Notes
+
+- Chaque immeuble, bien, pièce de colocation et locataire peut recevoir un fil de notes horodatées, triées de la plus récente à la plus ancienne.
+- Ajouter une note exige le même droit que gérer l’entité porteuse (manage buildings, manage properties ou manage tenants). Modifier ou supprimer une note est réservé à son auteur ou au rôle admin, même si l’utilisateur dispose par ailleurs du droit de gérer l’entité.
+- Les notes remplacent l’ancien champ notes en texte libre des immeubles, des biens et des pièces de colocation ; son contenu existant a été migré en première note lors de l’introduction de ce système.
 
 ## 7. Design system du back-office
 
@@ -148,6 +157,7 @@ Le back-office est volontairement sobre, dense et lisible. Il n’utilise pas de
 | Fiches | detail-hero, detail-grid, detail-panel, detail-aside |
 | États | status-pill, status-active, status-muted, flash, errors |
 | Médias | admin._media, media-card, photo-grid, modal-dialog |
+| Notes | admin._notes, notes-feed, note-entry |
 | Carte | admin._map, map-card, address-map |
 
 Avant d’ajouter une règle CSS, chercher une classe existante. Les styles spécifiques à une vue restent dans le layout tant que le projet n’a pas adopté une feuille de style compilée dédiée ; ne pas créer de styles inline isolés dans une vue.

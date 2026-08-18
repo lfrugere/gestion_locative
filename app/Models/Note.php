@@ -27,8 +27,6 @@ class Note extends Model
 
     public function wasEdited(): bool
     {
-        return $this->updated_at !== null
-            && $this->created_at !== null
-            && ! $this->updated_at->equalTo($this->created_at);
+        return $this->updated_by !== null;
     }
 }
