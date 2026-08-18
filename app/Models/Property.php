@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
     'floor',
     'surface_m2',
     'status',
-    'notes',
 ])]
 class Property extends Model
 {
@@ -58,6 +57,11 @@ class Property extends Model
     public function media(): MorphMany
     {
         return $this->morphMany(Media::class, 'mediable');
+    }
+
+    public function notes(): MorphMany
+    {
+        return $this->morphMany(Note::class, 'notable')->latest();
     }
 
     public function typeLabel(): string

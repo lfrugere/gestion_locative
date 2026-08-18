@@ -13,7 +13,6 @@
         <div class="form-field"><label for="address_postal_code">Code postal</label><input id="address_postal_code" name="address[postal_code]" value="{{ old('address.postal_code', $building->address->postal_code ?? '') }}" required></div>
         <div class="form-field"><label for="address_city">Ville</label><input id="address_city" name="address[city]" value="{{ old('address.city', $building->address->city ?? '') }}" required></div>
         <div class="form-field"><label for="address_country">Pays</label><input id="address_country" name="address[country]" value="{{ old('address.country', $building->address->country ?? 'FR') }}" maxlength="2" required></div>
-        <div class="form-field full"><label for="notes">Notes</label><textarea id="notes" name="notes">{{ old('notes', $building->notes ?? '') }}</textarea></div>
     </div>
     <div class="form-actions"><a class="button secondary" href="{{ route('admin.buildings.index') }}">Annuler</a><button class="button" type="submit">{{ $submitLabel }}</button></div>
 </form>

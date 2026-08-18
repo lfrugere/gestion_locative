@@ -22,7 +22,6 @@
         <div class="form-field" id="address-postal-field"><label for="address_postal_code">Code postal</label><input id="address_postal_code" name="address[postal_code]" value="{{ old('address.postal_code', $property->address->postal_code ?? '') }}"></div>
         <div class="form-field" id="address-city-field"><label for="address_city">Ville</label><input id="address_city" name="address[city]" value="{{ old('address.city', $property->address->city ?? '') }}"></div>
         <div class="form-field" id="address-country-field"><label for="address_country">Pays</label><input id="address_country" name="address[country]" value="{{ old('address.country', $property->address->country ?? 'FR') }}" maxlength="2"></div>
-        <div class="form-field full"><label for="notes">Notes</label><textarea id="notes" name="notes">{{ old('notes', $property->notes ?? '') }}</textarea></div>
     </div>
     <div class="form-actions"><a class="button secondary" href="{{ route('admin.properties.index') }}">Annuler</a><button class="button" type="submit">{{ $submitLabel }}</button></div>
 </form>

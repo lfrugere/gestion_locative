@@ -43,10 +43,11 @@
                 @elseif ($property->address)
                     <p class="address-value">{{ $property->address->line1 }}@if($property->address->line2)<br>{{ $property->address->line2 }}@endif<br>{{ $property->address->postal_code }} {{ $property->address->city }}<br>{{ $property->address->country }}</p>
                 @endif
-                @if ($property->notes)<div class="notes-block"><span>Notes</span><p>{{ $property->notes }}</p></div>@endif
             </section>
 
             @include('admin._media', ['media' => $property->media, 'mediable' => $property, 'managePermission' => 'manage properties', 'uploadRoute' => route('admin.properties.media.store', $property)])
+
+            @include('admin._notes', ['notes' => $property->notes, 'managePermission' => 'manage properties', 'storeRoute' => route('admin.properties.notes.store', $property)])
 
             @can('manage properties')
                 <form class="danger-zone" method="POST" action="{{ route('admin.properties.destroy', $property) }}" onsubmit="return confirm('Supprimer ce bien ?')">

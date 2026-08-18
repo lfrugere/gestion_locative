@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['reference', 'name', 'address_id', 'notes'])]
+#[Fillable(['reference', 'name', 'address_id'])]
 class Building extends Model
 {
     public function address(): BelongsTo
@@ -24,5 +24,10 @@ class Building extends Model
     public function media(): MorphMany
     {
         return $this->morphMany(Media::class, 'mediable');
+    }
+
+    public function notes(): MorphMany
+    {
+        return $this->morphMany(Note::class, 'notable')->latest();
     }
 }

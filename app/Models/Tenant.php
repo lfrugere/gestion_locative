@@ -61,6 +61,11 @@ class Tenant extends Model
         return $this->morphMany(Media::class, 'mediable');
     }
 
+    public function notes(): MorphMany
+    {
+        return $this->morphMany(Note::class, 'notable')->latest();
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

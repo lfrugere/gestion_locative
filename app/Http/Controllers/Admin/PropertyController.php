@@ -34,7 +34,7 @@ class PropertyController extends Controller
     public function show(Property $property): View
     {
         return view('admin.properties.show', [
-            'property' => $property->load(['building.address', 'address', 'media.tags']),
+            'property' => $property->load(['building.address', 'address', 'media.tags', 'notes.author', 'notes.editor']),
         ]);
     }
 
@@ -96,7 +96,6 @@ class PropertyController extends Controller
             'floor' => ['nullable', 'string', 'max:30'],
             'surface_m2' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
-            'notes' => ['nullable', 'string'],
         ]);
 
         $addressId = null;
@@ -125,7 +124,6 @@ class PropertyController extends Controller
                 'floor' => $validated['floor'] ?? null,
                 'surface_m2' => $validated['surface_m2'] ?? null,
                 'status' => $validated['status'],
-                'notes' => $validated['notes'] ?? null,
             ];
 
             if ($property) {

@@ -32,7 +32,7 @@ class BuildingController extends Controller
     public function show(Building $building): View
     {
         return view('admin.buildings.show', [
-            'building' => $building->load(['address', 'properties', 'media.tags']),
+            'building' => $building->load(['address', 'properties', 'media.tags', 'notes.author', 'notes.editor']),
         ]);
     }
 
@@ -83,7 +83,6 @@ class BuildingController extends Controller
             'address.postal_code' => ['required', 'string', 'max:20'],
             'address.city' => ['required', 'string', 'max:255'],
             'address.country' => ['required', 'string', 'size:2'],
-            'notes' => ['nullable', 'string'],
         ]);
 
         $addressId = $building?->address_id;
@@ -93,7 +92,6 @@ class BuildingController extends Controller
                 $building->update([
                     'reference' => $validated['reference'],
                     'name' => $validated['name'],
-                    'notes' => $validated['notes'] ?? null,
                 ]);
 
                 return;
@@ -105,7 +103,6 @@ class BuildingController extends Controller
                 'reference' => $validated['reference'],
                 'name' => $validated['name'],
                 'address_id' => $address->id,
-                'notes' => $validated['notes'] ?? null,
             ]);
         });
 
