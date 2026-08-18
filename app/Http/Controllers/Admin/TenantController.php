@@ -34,7 +34,7 @@ class TenantController extends Controller
     public function show(Tenant $tenant): View
     {
         return view('admin.tenants.show', [
-            'tenant' => $tenant->load('media.tags'),
+            'tenant' => $tenant->load(['media.tags', 'notes.author', 'notes.editor']),
         ]);
     }
 

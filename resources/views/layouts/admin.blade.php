@@ -90,9 +90,13 @@
             .panel-icon, .map-pin { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 11px; color: #0f766e; background: #e6fffb; font-size: 1.35rem; }
             .map-pin { color: #fff; background: #0f766e; font-size: 1.05rem; }
             .address-value { margin: 0; color: #243b53; font-size: .98rem; line-height: 1.65; }
-            .notes-block { margin-top: 22px; padding-top: 18px; border-top: 1px solid #edf1f5; }
-            .notes-block > span { color: #627d98; font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-            .notes-block p { margin: 7px 0 0; color: #486581; line-height: 1.6; white-space: pre-line; }
+            .notes-feed { border-top: 1px solid #edf1f5; }
+            .note-entry { padding: 14px 0; border-bottom: 1px solid #eaecf0; }
+            .note-entry:last-child { border-bottom: 0; }
+            .note-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+            .note-author { color: #243b53; font-size: .85rem; font-weight: 750; }
+            .note-date, .note-edited { color: #667085; font-size: .78rem; }
+            .note-body { margin: 6px 0 0; color: #486581; line-height: 1.6; white-space: pre-line; }
             .status-pill { display: inline-flex; align-items: center; justify-content: center; width: max-content; min-height: 27px; padding: 4px 10px; border-radius: 999px; font-size: .78rem; font-weight: 750; white-space: nowrap; }
             .status-active { color: #087443; background: #dcfae6; }
             .status-muted { color: #475467; background: #eef2f6; }

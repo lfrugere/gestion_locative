@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\BuildingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\Admin\NoteController;
 use App\Http\Controllers\Admin\PropertyController;
 use App\Http\Controllers\Admin\PropertyRoomController;
 use App\Http\Controllers\Admin\SystemCheckController;
@@ -55,6 +56,9 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::post('/buildings/{building}/media', [MediaController::class, 'storeBuilding'])
                 ->whereNumber('building')
                 ->name('buildings.media.store');
+            Route::post('/buildings/{building}/notes', [NoteController::class, 'storeBuilding'])
+                ->whereNumber('building')
+                ->name('buildings.notes.store');
         });
 
         Route::middleware('permission:view properties')->group(function () {
@@ -85,6 +89,9 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::post('/properties/{property}/media', [MediaController::class, 'storeProperty'])
                 ->whereNumber('property')
                 ->name('properties.media.store');
+            Route::post('/properties/{property}/notes', [NoteController::class, 'storeProperty'])
+                ->whereNumber('property')
+                ->name('properties.notes.store');
             Route::get('/properties/{property}/rooms/create', [PropertyRoomController::class, 'create'])
                 ->whereNumber('property')
                 ->name('property-rooms.create');
@@ -103,6 +110,9 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::post('/properties/{property}/rooms/{room}/media', [MediaController::class, 'storePropertyRoom'])
                 ->whereNumber(['property', 'room'])
                 ->name('property-rooms.media.store');
+            Route::post('/properties/{property}/rooms/{room}/notes', [NoteController::class, 'storePropertyRoom'])
+                ->whereNumber(['property', 'room'])
+                ->name('property-rooms.notes.store');
         });
 
         Route::middleware('permission:view tenants')->group(function () {
@@ -127,11 +137,16 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::post('/tenants/{tenant}/media', [MediaController::class, 'storeTenant'])
                 ->whereNumber('tenant')
                 ->name('tenants.media.store');
+            Route::post('/tenants/{tenant}/notes', [NoteController::class, 'storeTenant'])
+                ->whereNumber('tenant')
+                ->name('tenants.notes.store');
         });
 
         Route::middleware('permission:manage buildings|manage properties|manage tenants')->group(function () {
             Route::put('/media/{media}', [MediaController::class, 'update'])->name('media.update');
             Route::post('/media/{media}/primary', [MediaController::class, 'setPrimary'])->name('media.primary');
             Route::delete('/media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
+            Route::put('/notes/{note}', [NoteController::class, 'update'])->name('notes.update');
+            Route::delete('/notes/{note}', [NoteController::class, 'destroy'])->name('notes.destroy');
         });
     });

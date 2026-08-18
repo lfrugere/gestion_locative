@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
     'name',
     'surface_m2',
     'status',
-    'notes',
 ])]
 class PropertyRoom extends Model
 {
@@ -31,5 +30,10 @@ class PropertyRoom extends Model
     public function media(): MorphMany
     {
         return $this->morphMany(Media::class, 'mediable');
+    }
+
+    public function notes(): MorphMany
+    {
+        return $this->morphMany(Note::class, 'notable')->latest();
     }
 }

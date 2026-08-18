@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
     'surface_m2',
     'is_shared_accommodation',
     'status',
-    'notes',
 ])]
 class Property extends Model
 {
@@ -74,6 +73,11 @@ class Property extends Model
     public function media(): MorphMany
     {
         return $this->morphMany(Media::class, 'mediable');
+    }
+
+    public function notes(): MorphMany
+    {
+        return $this->morphMany(Note::class, 'notable')->latest();
     }
 
     public function rooms(): HasMany

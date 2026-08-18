@@ -39,7 +39,7 @@ class PropertyRoomController extends Controller
 
         return view('admin.property-rooms.show', [
             'property' => $property,
-            'room' => $room->load('media.tags'),
+            'room' => $room->load(['media.tags', 'notes.author', 'notes.editor']),
         ]);
     }
 
@@ -85,7 +85,6 @@ class PropertyRoomController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'surface_m2' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
-            'notes' => ['nullable', 'string'],
         ]);
     }
 

@@ -23,8 +23,7 @@
         <div class="form-field" id="address-line2-field"><label for="address_line2">Complément</label><input id="address_line2" name="address[line2]" value="{{ old('address.line2', $property->address->line2 ?? '') }}"></div>
         <div class="form-field" id="address-postal-field"><label for="address_postal_code">Code postal</label><input id="address_postal_code" name="address[postal_code]" value="{{ old('address.postal_code', $property->address->postal_code ?? '') }}"></div>
         <div class="form-field" id="address-city-field"><label for="address_city">Ville</label><input id="address_city" name="address[city]" value="{{ old('address.city', $property->address->city ?? '') }}"></div>
-        <div class="form-field" id="address-country-field"><label for="address_country">Pays</label><input id="address_country" name="address[country]" value="{{ old('address.country', $property->address->country ?? 'FR') }}" maxlength="2"></div>
-        <div class="form-field full"><label for="notes">Notes</label><textarea id="notes" name="notes">{{ old('notes', $property->notes ?? '') }}</textarea></div>
+        <div class="form-field" id="address-country-field"><label for="address_country">Pays</label><input id="address_country" value="France" disabled></div>
     </div>
     <div class="form-actions"><a class="button secondary" href="{{ route('admin.properties.index') }}">Annuler</a><button class="button" type="submit">{{ $submitLabel }}</button></div>
 </form>
@@ -34,7 +33,7 @@
     const sharedAccommodationField = document.getElementById('shared-accommodation-field');
     const sharedAccommodationInput = document.getElementById('is_shared_accommodation');
     const addressFields = ['address-fields', 'address-line1-field', 'address-line2-field', 'address-postal-field', 'address-city-field', 'address-country-field'].map((id) => document.getElementById(id));
-    const addressRequired = ['address_line1', 'address_postal_code', 'address_city', 'address_country'];
+    const addressRequired = ['address_line1', 'address_postal_code', 'address_city'];
     function updatePropertyFields() {
         const isHouse = typeSelect.value === 'house';
         const isParking = typeSelect.value === 'parking';

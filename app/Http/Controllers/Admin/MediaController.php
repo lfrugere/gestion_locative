@@ -51,10 +51,14 @@ class MediaController extends Controller
         abort_unless($this->canManage($media), 403);
 
         $validated = $request->validate([
+            'type' => ['required', Rule::in($media->isPhoto()
+                ? [Media::TYPE_PHOTOS]
+                : Media::documentTypesFor($media->mediable))],
             'display_name' => ['required', 'string', 'max:255'],
             'tags' => ['nullable', 'string', 'max:500'],
         ]);
-        $manager->update($media, $validated['display_name'], $validated['tags'] ?? null);
+        $type = $media->isPhoto() ? Media::TYPE_PHOTOS : $validated['type'];
+        $manager->update($media, $type, $validated['display_name'], $validated['tags'] ?? null);
 
         return back()->with('success', 'La pièce jointe a été modifiée.');
     }
@@ -85,8 +89,13 @@ class MediaController extends Controller
     private function store(Request $request, object $mediable, MediaManager $manager, string $route, ?array $parameters = null): RedirectResponse
     {
         $kind = $request->string('kind')->toString();
+        $defaultType = $kind === Media::KIND_PHOTO ? Media::TYPE_PHOTOS : Media::TYPE_OTHER;
+        $types = $kind === Media::KIND_PHOTO
+            ? [Media::TYPE_PHOTOS]
+            : Media::documentTypesFor($mediable);
         $validated = $request->validate([
             'kind' => ['required', Rule::in([Media::KIND_PHOTO, Media::KIND_DOCUMENT])],
+            'type' => ['nullable', Rule::in($types)],
             'file' => [
                 'required', 'file', 'max:20480',
                 $kind === Media::KIND_PHOTO ? 'mimes:jpg,jpeg,png,webp' : 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx',
@@ -95,7 +104,11 @@ class MediaController extends Controller
             'tags' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $manager->store($mediable, $validated['file'], $validated['kind'], $validated['display_name'] ?? null, $validated['tags'] ?? null);
+        $type = $kind === Media::KIND_PHOTO
+            ? Media::TYPE_PHOTOS
+            : ($validated['type'] ?? $defaultType);
+
+        $manager->store($mediable, $validated['file'], $validated['kind'], $type, $validated['display_name'] ?? null, $validated['tags'] ?? null);
 
         return to_route($route, $parameters ?? $mediable)->with('success', 'Le fichier a été ajouté.');
     }

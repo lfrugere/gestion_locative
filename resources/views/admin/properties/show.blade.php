@@ -45,9 +45,8 @@
                 @if ($property->building)
                     <a class="related-entity" href="{{ route('admin.buildings.show', $property->building) }}"><span class="entity-mark">I</span><span><strong>{{ $property->building->name }}</strong><small>{{ $property->building->reference }} · {{ $mapAddress->line1 }}, {{ $mapAddress->city }}</small></span><span class="row-arrow">→</span></a>
                 @elseif ($property->address)
-                    <p class="address-value">{{ $property->address->line1 }}@if($property->address->line2)<br>{{ $property->address->line2 }}@endif<br>{{ $property->address->postal_code }} {{ $property->address->city }}<br>{{ $property->address->country }}</p>
+                    <p class="address-value">{{ $property->address->line1 }}@if($property->address->line2)<br>{{ $property->address->line2 }}@endif<br>{{ $property->address->postal_code }} {{ $property->address->city }}<br>France</p>
                 @endif
-                @if ($property->notes)<div class="notes-block"><span>Notes</span><p>{{ $property->notes }}</p></div>@endif
             </section>
 
             @if ($property->canHaveRooms())
@@ -76,7 +75,9 @@
                 </section>
             @endif
 
-            @include('admin._media', ['media' => $property->media, 'managePermission' => 'manage properties', 'uploadRoute' => route('admin.properties.media.store', $property)])
+            @include('admin._media', ['media' => $property->media, 'mediable' => $property, 'managePermission' => 'manage properties', 'uploadRoute' => route('admin.properties.media.store', $property)])
+
+            @include('admin._notes', ['notes' => $property->notes, 'managePermission' => 'manage properties', 'storeRoute' => route('admin.properties.notes.store', $property)])
 
             @can('manage properties')
                 <form class="danger-zone" method="POST" action="{{ route('admin.properties.destroy', $property) }}" onsubmit="return confirm('Supprimer ce bien ?')">

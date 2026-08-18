@@ -32,10 +32,11 @@
                     <div class="metric"><span>Surface</span><strong>{{ $room->surface_m2 ? $room->surface_m2.' m²' : '—' }}</strong></div>
                     <div class="metric"><span>Bien</span><strong>{{ $property->reference }}</strong></div>
                 </div>
-                @if ($room->notes)<div class="notes-block"><span>Notes</span><p>{{ $room->notes }}</p></div>@endif
             </section>
 
-            @include('admin._media', ['media' => $room->media, 'managePermission' => 'manage properties', 'uploadRoute' => route('admin.property-rooms.media.store', [$property, $room])])
+            @include('admin._media', ['media' => $room->media, 'mediable' => $room, 'managePermission' => 'manage properties', 'uploadRoute' => route('admin.property-rooms.media.store', [$property, $room])])
+
+            @include('admin._notes', ['notes' => $room->notes, 'managePermission' => 'manage properties', 'storeRoute' => route('admin.property-rooms.notes.store', [$property, $room])])
 
             @can('manage properties')
                 <form class="danger-zone" method="POST" action="{{ route('admin.property-rooms.destroy', [$property, $room]) }}" onsubmit="return confirm('Supprimer cette pièce ?')">

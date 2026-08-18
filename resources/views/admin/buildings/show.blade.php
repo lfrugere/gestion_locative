@@ -27,8 +27,7 @@
         <div class="detail-main">
             <section class="detail-panel address-panel">
                 <div class="panel-heading"><div><span class="panel-kicker">Adresse</span><h2>Localisation de l’immeuble</h2></div><span class="panel-icon">⌖</span></div>
-                <p class="address-value">{{ $building->address->line1 }}@if($building->address->line2)<br>{{ $building->address->line2 }}@endif<br>{{ $building->address->postal_code }} {{ $building->address->city }}<br>{{ $building->address->country }}</p>
-                @if ($building->notes)<div class="notes-block"><span>Notes</span><p>{{ $building->notes }}</p></div>@endif
+                <p class="address-value">{{ $building->address->line1 }}@if($building->address->line2)<br>{{ $building->address->line2 }}@endif<br>{{ $building->address->postal_code }} {{ $building->address->city }}<br>France</p>
             </section>
 
             <section class="detail-panel associated-panel">
@@ -49,7 +48,9 @@
                 @endif
             </section>
 
-            @include('admin._media', ['media' => $building->media, 'managePermission' => 'manage buildings', 'uploadRoute' => route('admin.buildings.media.store', $building)])
+            @include('admin._media', ['media' => $building->media, 'mediable' => $building, 'managePermission' => 'manage buildings', 'uploadRoute' => route('admin.buildings.media.store', $building)])
+
+            @include('admin._notes', ['notes' => $building->notes, 'managePermission' => 'manage buildings', 'storeRoute' => route('admin.buildings.notes.store', $building)])
 
             @can('manage buildings')
                 <form class="danger-zone" method="POST" action="{{ route('admin.buildings.destroy', $building) }}" onsubmit="return confirm('Supprimer cet immeuble ?')">

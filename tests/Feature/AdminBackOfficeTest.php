@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Address;
 use App\Models\Building;
 use App\Models\Media;
+use App\Models\Note;
 use App\Models\Property;
 use App\Models\PropertyRoom;
 use App\Models\Tenant;
@@ -482,6 +483,7 @@ class AdminBackOfficeTest extends TestCase
         $this->actingAs($admin)
             ->post(route('admin.properties.media.store', $property), [
                 'kind' => Media::KIND_DOCUMENT,
+                'type' => Media::TYPE_DIAGNOSTICS,
                 'file' => UploadedFile::fake()->create('diagnostic.pdf', 100, 'application/pdf'),
                 'display_name' => 'Diagnostic énergétique',
                 'tags' => 'diagnostic, énergie',
@@ -489,6 +491,8 @@ class AdminBackOfficeTest extends TestCase
             ->assertRedirect(route('admin.properties.show', $property));
 
         $document = Media::where('kind', Media::KIND_DOCUMENT)->firstOrFail();
+        $this->assertSame(Media::TYPE_DIAGNOSTICS, $document->type);
+        $this->assertStringContainsString('media/property/MEDIA-01/diagnostics/', $document->path);
         $this->assertSame('Diagnostic énergétique', $document->display_name);
         $this->assertDatabaseHas('tags', ['name' => 'diagnostic']);
         $this->assertDatabaseHas('tags', ['name' => 'énergie']);
@@ -639,6 +643,7 @@ class AdminBackOfficeTest extends TestCase
         $this->actingAs($admin)
             ->post(route('admin.tenants.media.store', $tenant), [
                 'kind' => Media::KIND_DOCUMENT,
+                'type' => Media::TYPE_IDENTITY,
                 'file' => UploadedFile::fake()->create('dossier.pdf', 100, 'application/pdf'),
                 'display_name' => 'Dossier de candidature',
                 'tags' => 'candidature, identité',
@@ -648,8 +653,10 @@ class AdminBackOfficeTest extends TestCase
         $this->assertDatabaseHas('media', [
             'mediable_type' => Tenant::class,
             'mediable_id' => $tenant->id,
+            'type' => Media::TYPE_IDENTITY,
             'display_name' => 'Dossier de candidature',
         ]);
+        $this->assertStringContainsString('media/tenant/'.$tenant->storage_key.'/identity/', Media::where('mediable_id', $tenant->id)->where('type', Media::TYPE_IDENTITY)->value('path'));
 
         $manager = User::factory()->create();
         $manager->assignRole('gestionnaire');
@@ -670,6 +677,165 @@ class AdminBackOfficeTest extends TestCase
                 'status' => Tenant::STATUS_CANDIDATE,
             ])
             ->assertRedirect(route('admin.tenants.index', ['status' => Tenant::STATUS_CANDIDATE]));
+    }
+
+    public function test_admin_can_add_edit_and_delete_a_note_on_a_building(): void
+    {
+        $admin = $this->admin();
+        $building = $this->createBuilding();
+
+        $this->actingAs($admin)
+            ->post(route('admin.buildings.notes.store', $building), [
+                'body' => 'Interphone à changer',
+            ])
+            ->assertRedirect(route('admin.buildings.show', $building));
+
+        $note = Note::firstOrFail();
+        $this->assertSame(Building::class, $note->notable_type);
+        $this->assertSame($building->id, $note->notable_id);
+        $this->assertSame($admin->id, $note->created_by);
+        $this->assertNull($note->updated_by);
+        $this->assertFalse($note->wasEdited());
+
+        $this->actingAs($admin)
+            ->get(route('admin.buildings.show', $building))
+            ->assertOk()
+            ->assertSee('Interphone à changer')
+            ->assertSee($admin->name);
+
+        $this->actingAs($admin)
+            ->put(route('admin.notes.update', $note), [
+                'body' => 'Interphone changé',
+            ])
+            ->assertRedirect();
+
+        $note->refresh();
+        $this->assertSame('Interphone changé', $note->body);
+        $this->assertSame($admin->id, $note->updated_by);
+        $this->assertTrue($note->wasEdited());
+
+        $this->actingAs($admin)
+            ->delete(route('admin.notes.destroy', $note))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('notes', ['id' => $note->id]);
+    }
+
+    public function test_note_add_permission_matches_manage_permission_on_the_parent(): void
+    {
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+
+        $building = $this->createBuilding();
+
+        $this->actingAs($manager)
+            ->post(route('admin.buildings.notes.store', $building), ['body' => 'Non autorisé'])
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('notes', 0);
+
+        $tenant = Tenant::create([
+            'civility' => Tenant::CIVILITY_MR,
+            'last_name' => 'Locataire',
+            'first_name' => 'Test',
+            'status' => Tenant::STATUS_ACTIVE,
+        ]);
+
+        $this->actingAs($manager)
+            ->post(route('admin.tenants.notes.store', $tenant), ['body' => 'Autorisé'])
+            ->assertRedirect(route('admin.tenants.show', $tenant));
+
+        $this->assertDatabaseCount('notes', 1);
+    }
+
+    public function test_only_the_author_or_admin_can_edit_or_delete_a_note(): void
+    {
+        $author = User::factory()->create();
+        $author->assignRole('gestionnaire');
+        $colleague = User::factory()->create();
+        $colleague->assignRole('gestionnaire');
+        $admin = $this->admin();
+
+        $tenant = Tenant::create([
+            'civility' => Tenant::CIVILITY_MR,
+            'last_name' => 'Locataire',
+            'first_name' => 'Test',
+            'status' => Tenant::STATUS_ACTIVE,
+        ]);
+
+        $this->actingAs($author)
+            ->post(route('admin.tenants.notes.store', $tenant), ['body' => 'Note initiale'])
+            ->assertRedirect();
+
+        $note = Note::firstOrFail();
+
+        $this->actingAs($colleague)
+            ->put(route('admin.notes.update', $note), ['body' => 'Tentative non autorisée'])
+            ->assertForbidden();
+
+        $this->actingAs($colleague)
+            ->delete(route('admin.notes.destroy', $note))
+            ->assertForbidden();
+
+        $this->actingAs($author)
+            ->put(route('admin.notes.update', $note), ['body' => 'Modifiée par l’auteur'])
+            ->assertRedirect();
+
+        $note->refresh();
+        $this->assertSame('Modifiée par l’auteur', $note->body);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.notes.destroy', $note))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('notes', ['id' => $note->id]);
+    }
+
+    public function test_notes_are_available_on_properties_and_property_rooms(): void
+    {
+        $admin = $this->admin();
+        $building = $this->createBuilding();
+        $property = Property::create([
+            'reference' => 'NOTE-PROP-01',
+            'name' => 'Bien avec notes',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'is_shared_accommodation' => true,
+            'status' => 'active',
+        ]);
+        $room = $property->rooms()->create([
+            'name' => 'Chambre notée',
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.properties.notes.store', $property), ['body' => 'Note bien'])
+            ->assertRedirect(route('admin.properties.show', $property));
+
+        $this->actingAs($admin)
+            ->post(route('admin.property-rooms.notes.store', [$property, $room]), ['body' => 'Note pièce'])
+            ->assertRedirect(route('admin.property-rooms.show', [$property, $room]));
+
+        $this->assertDatabaseHas('notes', [
+            'notable_type' => Property::class,
+            'notable_id' => $property->id,
+            'body' => 'Note bien',
+        ]);
+        $this->assertDatabaseHas('notes', [
+            'notable_type' => PropertyRoom::class,
+            'notable_id' => $room->id,
+            'body' => 'Note pièce',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.properties.show', $property))
+            ->assertOk()
+            ->assertSee('Note bien');
+
+        $this->actingAs($admin)
+            ->get(route('admin.property-rooms.show', [$property, $room]))
+            ->assertOk()
+            ->assertSee('Note pièce');
     }
 
     public function test_tenant_can_be_linked_to_a_future_user_account(): void
