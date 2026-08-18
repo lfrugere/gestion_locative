@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use App\Models\Building;
 use App\Models\Property;
+use App\Models\PropertyRoom;
 use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -80,7 +81,7 @@ class Media extends Model
                 self::TYPE_INSURANCE,
                 self::TYPE_OTHER,
             ],
-            $mediable instanceof Building, $mediable instanceof Property => [
+            $mediable instanceof Building, $mediable instanceof Property, $mediable instanceof PropertyRoom => [
                 self::TYPE_PHOTOS,
                 self::TYPE_DIAGNOSTICS,
                 self::TYPE_INSURANCE,
