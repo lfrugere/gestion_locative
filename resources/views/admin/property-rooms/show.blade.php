@@ -8,7 +8,7 @@
     <section class="detail-hero">
         <div class="detail-hero-copy">
             <a class="back-link" href="{{ route('admin.properties.show', $property) }}">← {{ $property->name }}</a>
-            <div class="eyebrow">{{ $room->typeLabel() }} · {{ $property->reference }}</div>
+            <div class="eyebrow">{{ $property->reference }}</div>
             <h1>{{ $room->name }}</h1>
             <p class="detail-lead">{{ $property->name }} · Colocation</p>
         </div>
@@ -28,7 +28,6 @@
             <section class="detail-panel">
                 <div class="panel-heading"><div><span class="panel-kicker">Vue d’ensemble</span><h2>Caractéristiques de la pièce</h2></div><span class="panel-icon">▦</span></div>
                 <div class="metric-grid">
-                    <div class="metric"><span>Type</span><strong>{{ $room->typeLabel() }}</strong></div>
                     <div class="metric"><span>Statut</span><strong>{{ $room->status === 'active' ? 'Active' : 'Inactive' }}</strong></div>
                     <div class="metric"><span>Surface</span><strong>{{ $room->surface_m2 ? $room->surface_m2.' m²' : '—' }}</strong></div>
                     <div class="metric"><span>Bien</span><strong>{{ $property->reference }}</strong></div>

@@ -66,7 +66,7 @@
                             @else
                                 <span class="entity-mark">P</span>
                             @endif
-                            <span><strong>{{ $room->name }}</strong><small>{{ $room->typeLabel() }}@if($room->surface_m2) · {{ $room->surface_m2 }} m²@endif</small></span>
+                            <span><strong>{{ $room->name }}</strong>@if($room->surface_m2)<small>{{ $room->surface_m2 }} m²</small>@endif</span>
                             <span class="status-pill {{ $room->status === 'active' ? 'status-active' : 'status-muted' }}">{{ $room->status === 'active' ? 'Active' : 'Inactive' }}</span>
                             <span class="row-arrow">→</span>
                         </a>

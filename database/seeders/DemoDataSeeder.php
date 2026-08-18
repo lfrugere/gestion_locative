@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\Address;
 use App\Models\Building;
 use App\Models\Property;
-use App\Models\PropertyRoom;
 use App\Models\Tenant;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -151,15 +150,15 @@ class DemoDataSeeder extends Seeder
 
             $rooms = [
                 'APP-LYO-002-01' => [
-                    ['name' => 'Chambre cote cour', 'type' => PropertyRoom::TYPE_BEDROOM, 'surface_m2' => 12.40, 'status' => 'active', 'notes' => 'Chambre calme avec rangements integres.'],
-                    ['name' => 'Chambre cote rue', 'type' => PropertyRoom::TYPE_BEDROOM, 'surface_m2' => 11.80, 'status' => 'active', 'notes' => null],
-                    ['name' => 'Salon partage', 'type' => PropertyRoom::TYPE_LIVING_ROOM, 'surface_m2' => 18.20, 'status' => 'active', 'notes' => 'Piece commune principale.'],
-                    ['name' => 'Cuisine commune', 'type' => PropertyRoom::TYPE_KITCHEN, 'surface_m2' => 8.60, 'status' => 'active', 'notes' => null],
+                    ['name' => 'Chambre cote cour', 'surface_m2' => 12.40, 'status' => 'active', 'notes' => 'Chambre calme avec rangements integres.'],
+                    ['name' => 'Chambre cote rue', 'surface_m2' => 11.80, 'status' => 'active', 'notes' => null],
+                    ['name' => 'Salon partage', 'surface_m2' => 18.20, 'status' => 'active', 'notes' => 'Piece commune principale.'],
+                    ['name' => 'Cuisine commune', 'surface_m2' => 8.60, 'status' => 'active', 'notes' => null],
                 ],
                 'MAI-NAN-001' => [
-                    ['name' => 'Chambre jardin', 'type' => PropertyRoom::TYPE_BEDROOM, 'surface_m2' => 13.50, 'status' => 'active', 'notes' => 'Vue sur le jardin.'],
-                    ['name' => 'Chambre etage', 'type' => PropertyRoom::TYPE_BEDROOM, 'surface_m2' => 14.10, 'status' => 'active', 'notes' => null],
-                    ['name' => 'Salle de bain partagee', 'type' => PropertyRoom::TYPE_BATHROOM, 'surface_m2' => 6.30, 'status' => 'active', 'notes' => null],
+                    ['name' => 'Chambre jardin', 'surface_m2' => 13.50, 'status' => 'active', 'notes' => 'Vue sur le jardin.'],
+                    ['name' => 'Chambre etage', 'surface_m2' => 14.10, 'status' => 'active', 'notes' => null],
+                    ['name' => 'Salle de bain partagee', 'surface_m2' => 6.30, 'status' => 'active', 'notes' => null],
                 ],
             ];
 

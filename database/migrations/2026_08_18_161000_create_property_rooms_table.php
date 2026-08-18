@@ -12,13 +12,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('property_id')->constrained()->cascadeOnDelete();
             $table->string('name');
-            $table->string('type', 30);
             $table->decimal('surface_m2', 8, 2)->nullable();
             $table->string('status', 30)->default('active');
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->index(['property_id', 'type']);
             $table->index('status');
         });
     }

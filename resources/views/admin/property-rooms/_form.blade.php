@@ -7,7 +7,6 @@
     @if ($room) @method('PUT') @endif
     <div class="form-grid">
         <div class="form-field"><label for="name">Nom de la pièce</label><input id="name" name="name" value="{{ old('name', $room->name ?? '') }}" required autofocus></div>
-        <div class="form-field"><label for="type">Type</label><select id="type" name="type" required>@foreach (\App\Models\PropertyRoom::TYPE_LABELS as $value => $label)<option value="{{ $value }}" @selected(old('type', $room->type ?? \App\Models\PropertyRoom::TYPE_BEDROOM) === $value)>{{ $label }}</option>@endforeach</select></div>
         <div class="form-field"><label for="surface_m2">Surface (m²)</label><input id="surface_m2" name="surface_m2" type="number" min="0" step="0.01" value="{{ old('surface_m2', $room->surface_m2 ?? '') }}"></div>
         <div class="form-field"><label for="status">Statut</label><select id="status" name="status" required><option value="active" @selected(old('status', $room->status ?? 'active') === 'active')>Active</option><option value="inactive" @selected(old('status', $room->status ?? '') === 'inactive')>Inactive</option></select></div>
         <div class="form-field full"><label for="notes">Notes</label><textarea id="notes" name="notes">{{ old('notes', $room->notes ?? '') }}</textarea></div>

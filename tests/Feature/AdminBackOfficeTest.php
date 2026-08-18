@@ -330,9 +330,7 @@ class AdminBackOfficeTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('admin.property-rooms.store', $property), [
-                'name' => 'Chambre bleue',
-                'type' => PropertyRoom::TYPE_BEDROOM,
-                'surface_m2' => 12.5,
+                'name' => 'Chambre bleue',                'surface_m2' => 12.5,
                 'status' => 'active',
                 'notes' => 'Cote cour',
             ])
@@ -342,9 +340,7 @@ class AdminBackOfficeTest extends TestCase
         $this->assertDatabaseHas('property_rooms', [
             'id' => $room->id,
             'property_id' => $property->id,
-            'name' => 'Chambre bleue',
-            'type' => PropertyRoom::TYPE_BEDROOM,
-        ]);
+            'name' => 'Chambre bleue',        ]);
 
         $this->actingAs($admin)
             ->get(route('admin.property-rooms.show', [$property, $room]))
@@ -353,9 +349,7 @@ class AdminBackOfficeTest extends TestCase
 
         $this->actingAs($admin)
             ->put(route('admin.property-rooms.update', [$property, $room]), [
-                'name' => 'Chambre verte',
-                'type' => PropertyRoom::TYPE_BEDROOM,
-                'surface_m2' => 13,
+                'name' => 'Chambre verte',                'surface_m2' => 13,
                 'status' => 'inactive',
             ])
             ->assertRedirect(route('admin.property-rooms.show', [$property, $room]));
@@ -387,9 +381,7 @@ class AdminBackOfficeTest extends TestCase
 
         $this->actingAs($this->admin())
             ->post(route('admin.property-rooms.store', $property), [
-                'name' => 'Chambre refusee',
-                'type' => PropertyRoom::TYPE_BEDROOM,
-                'status' => 'active',
+                'name' => 'Chambre refusee',                'status' => 'active',
             ])
             ->assertNotFound();
 
@@ -410,9 +402,7 @@ class AdminBackOfficeTest extends TestCase
             'status' => 'active',
         ]);
         $property->rooms()->create([
-            'name' => 'Chambre existante',
-            'type' => PropertyRoom::TYPE_BEDROOM,
-            'status' => 'active',
+            'name' => 'Chambre existante',            'status' => 'active',
         ]);
 
         $this->actingAs($this->admin())
@@ -441,9 +431,7 @@ class AdminBackOfficeTest extends TestCase
             'status' => 'active',
         ]);
         $room = $property->rooms()->create([
-            'name' => 'Chambre photo',
-            'type' => PropertyRoom::TYPE_BEDROOM,
-            'status' => 'active',
+            'name' => 'Chambre photo',            'status' => 'active',
         ]);
 
         $this->actingAs($this->admin())

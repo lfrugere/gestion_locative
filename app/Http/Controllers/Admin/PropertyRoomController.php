@@ -83,7 +83,6 @@ class PropertyRoomController extends Controller
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', Rule::in(PropertyRoom::TYPES)],
             'surface_m2' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
             'notes' => ['nullable', 'string'],
