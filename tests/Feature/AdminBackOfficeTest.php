@@ -6,6 +6,7 @@ use App\Models\Address;
 use App\Models\Building;
 use App\Models\Media;
 use App\Models\Property;
+use App\Models\PropertyRoom;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Access\Gate;
@@ -131,6 +132,7 @@ class AdminBackOfficeTest extends TestCase
                 'reference' => 'MAISON-01',
                 'name' => 'Maison de campagne',
                 'type' => 'house',
+                'is_shared_accommodation' => '1',
                 'status' => 'active',
                 'address' => [
                     'line1' => '5 chemin du Lac',
@@ -145,6 +147,50 @@ class AdminBackOfficeTest extends TestCase
             'reference' => 'MAISON-01',
             'type' => 'house',
             'building_id' => null,
+            'is_shared_accommodation' => true,
+        ]);
+    }
+
+    public function test_admin_can_mark_an_apartment_as_shared_accommodation(): void
+    {
+        $building = $this->createBuilding();
+
+        $this->actingAs($this->admin())
+            ->post('/admin/properties', [
+                'reference' => 'COLOC-APP-01',
+                'name' => 'Appartement en colocation',
+                'type' => Property::TYPE_APARTMENT,
+                'building_id' => $building->id,
+                'is_shared_accommodation' => '1',
+                'status' => 'active',
+            ])
+            ->assertRedirect('/admin/properties');
+
+        $this->assertDatabaseHas('properties', [
+            'reference' => 'COLOC-APP-01',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'is_shared_accommodation' => true,
+        ]);
+    }
+
+    public function test_parking_cannot_be_marked_as_shared_accommodation(): void
+    {
+        $building = $this->createBuilding();
+
+        $this->actingAs($this->admin())
+            ->post('/admin/properties', [
+                'reference' => 'COLOC-PARKING-01',
+                'name' => 'Parking impossible en colocation',
+                'type' => Property::TYPE_PARKING,
+                'building_id' => $building->id,
+                'is_shared_accommodation' => '1',
+                'status' => 'active',
+            ])
+            ->assertSessionHasErrors('is_shared_accommodation');
+
+        $this->assertDatabaseMissing('properties', [
+            'reference' => 'COLOC-PARKING-01',
         ]);
     }
 
@@ -227,6 +273,7 @@ class AdminBackOfficeTest extends TestCase
 
         $response->assertOk()
             ->assertSee('id="building-fields"', false)
+            ->assertSee('id="shared-accommodation-field"', false)
             ->assertSee('id="address-fields"', false)
             ->assertSee('function updatePropertyFields', false);
     }
@@ -266,6 +313,140 @@ class AdminBackOfficeTest extends TestCase
             'address_id' => null,
         ]);
         $this->assertDatabaseMissing('addresses', ['id' => $address->id]);
+    }
+
+    public function test_admin_can_create_update_and_delete_a_room_on_a_shared_property(): void
+    {
+        $admin = $this->admin();
+        $building = $this->createBuilding();
+        $property = Property::create([
+            'reference' => 'COLOC-ROOMS-01',
+            'name' => 'Colocation test',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'is_shared_accommodation' => true,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.property-rooms.store', $property), [
+                'name' => 'Chambre bleue',                'surface_m2' => 12.5,
+                'status' => 'active',
+                'notes' => 'Cote cour',
+            ])
+            ->assertRedirect(route('admin.properties.show', $property));
+
+        $room = PropertyRoom::firstOrFail();
+        $this->assertDatabaseHas('property_rooms', [
+            'id' => $room->id,
+            'property_id' => $property->id,
+            'name' => 'Chambre bleue',        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.property-rooms.show', [$property, $room]))
+            ->assertOk()
+            ->assertSee('Chambre bleue');
+
+        $this->actingAs($admin)
+            ->put(route('admin.property-rooms.update', [$property, $room]), [
+                'name' => 'Chambre verte',                'surface_m2' => 13,
+                'status' => 'inactive',
+            ])
+            ->assertRedirect(route('admin.property-rooms.show', [$property, $room]));
+
+        $this->assertDatabaseHas('property_rooms', [
+            'id' => $room->id,
+            'name' => 'Chambre verte',
+            'status' => 'inactive',
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.property-rooms.destroy', [$property, $room]))
+            ->assertRedirect(route('admin.properties.show', $property));
+
+        $this->assertDatabaseMissing('property_rooms', ['id' => $room->id]);
+    }
+
+    public function test_room_cannot_be_created_on_a_non_shared_property(): void
+    {
+        $building = $this->createBuilding();
+        $property = Property::create([
+            'reference' => 'CLASSIC-ROOMS-01',
+            'name' => 'Appartement classique',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'is_shared_accommodation' => false,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.property-rooms.store', $property), [
+                'name' => 'Chambre refusee',                'status' => 'active',
+            ])
+            ->assertNotFound();
+
+        $this->assertDatabaseMissing('property_rooms', [
+            'name' => 'Chambre refusee',
+        ]);
+    }
+
+    public function test_shared_accommodation_cannot_be_disabled_while_rooms_exist(): void
+    {
+        $building = $this->createBuilding();
+        $property = Property::create([
+            'reference' => 'COLOC-LOCKED-01',
+            'name' => 'Colocation verrouillee',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'is_shared_accommodation' => true,
+            'status' => 'active',
+        ]);
+        $property->rooms()->create([
+            'name' => 'Chambre existante',            'status' => 'active',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->put(route('admin.properties.update', $property), [
+                'reference' => $property->reference,
+                'name' => $property->name,
+                'type' => Property::TYPE_APARTMENT,
+                'building_id' => $building->id,
+                'status' => 'active',
+            ])
+            ->assertSessionHasErrors('is_shared_accommodation');
+
+        $this->assertDatabaseHas('properties', [
+            'id' => $property->id,
+            'is_shared_accommodation' => true,
+        ]);
+    }
+
+    public function test_admin_can_upload_media_on_a_property_room(): void
+    {
+        $property = Property::create([
+            'reference' => 'ROOM-MEDIA-01',
+            'name' => 'Maison media pieces',
+            'type' => Property::TYPE_HOUSE,
+            'is_shared_accommodation' => true,
+            'status' => 'active',
+        ]);
+        $room = $property->rooms()->create([
+            'name' => 'Chambre photo',            'status' => 'active',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.property-rooms.media.store', [$property, $room]), [
+                'kind' => Media::KIND_PHOTO,
+                'file' => UploadedFile::fake()->create('chambre.jpg', 100, 'image/jpeg'),
+            ])
+            ->assertRedirect(route('admin.property-rooms.show', [$property, $room]));
+
+        $this->assertDatabaseHas('media', [
+            'mediable_type' => PropertyRoom::class,
+            'mediable_id' => $room->id,
+            'kind' => Media::KIND_PHOTO,
+            'is_primary' => true,
+        ]);
     }
 
     public function test_admin_can_upload_tag_and_manage_media_on_a_property(): void

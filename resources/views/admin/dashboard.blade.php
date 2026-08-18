@@ -67,7 +67,23 @@
         <section class="detail-panel dashboard-panel">
             <div class="panel-heading"><div><span class="panel-kicker">Derniers ajouts</span><h2>Biens récents</h2></div><a class="panel-link" href="{{ route('admin.properties.index') }}">Tous les biens</a></div>
             @forelse ($recentProperties as $property)
-                <a class="dashboard-row" href="{{ route('admin.properties.show', $property) }}"><span class="entity-mark">{{ $property->type === 'parking' ? 'P' : ($property->type === 'house' ? 'M' : 'A') }}</span><span><strong>{{ $property->name }}</strong><small>{{ $property->reference }} · {{ $property->typeLabel() }}@if($property->building) · {{ $property->building->name }}@endif</small></span><span class="status-pill {{ $property->status === 'active' ? 'status-active' : 'status-muted' }}">{{ $property->status === 'active' ? 'Actif' : 'Inactif' }}</span><span class="row-arrow">→</span></a>
+                <a class="dashboard-row" href="{{ route('admin.properties.show', $property) }}">
+                    <span class="entity-mark">{{ $property->type === 'parking' ? 'P' : ($property->type === 'house' ? 'M' : 'A') }}</span>
+                    <span>
+                        <strong>{{ $property->name }}</strong>
+                        <small>
+                            {{ $property->reference }} · {{ $property->typeLabel() }}
+                            @if ($property->is_shared_accommodation)
+                                · Colocation
+                            @endif
+                            @if ($property->building)
+                                · {{ $property->building->name }}
+                            @endif
+                        </small>
+                    </span>
+                    <span class="status-pill {{ $property->status === 'active' ? 'status-active' : 'status-muted' }}">{{ $property->status === 'active' ? 'Actif' : 'Inactif' }}</span>
+                    <span class="row-arrow">→</span>
+                </a>
             @empty
                 <p class="empty compact">Aucun bien pour le moment.</p>
             @endforelse
