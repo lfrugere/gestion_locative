@@ -82,8 +82,8 @@ class BuildingController extends Controller
             'address.line2' => ['nullable', 'string', 'max:255'],
             'address.postal_code' => ['required', 'string', 'max:20'],
             'address.city' => ['required', 'string', 'max:255'],
-            'address.country' => ['required', 'string', 'size:2'],
         ]);
+        $validated['address']['country'] = 'FR';
 
         $addressId = $building?->address_id;
         DB::transaction(function () use ($validated, $building, &$addressId): void {

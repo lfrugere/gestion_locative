@@ -99,12 +99,14 @@ class PropertyController extends Controller
             'address.line2' => ['nullable', 'string', 'max:255'],
             'address.postal_code' => [Rule::requiredIf($type === Property::TYPE_HOUSE), 'nullable', 'string', 'max:20'],
             'address.city' => [Rule::requiredIf($type === Property::TYPE_HOUSE), 'nullable', 'string', 'max:255'],
-            'address.country' => [Rule::requiredIf($type === Property::TYPE_HOUSE), 'nullable', 'string', 'size:2'],
             'floor' => ['nullable', 'string', 'max:30'],
             'surface_m2' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'is_shared_accommodation' => ['sometimes', 'boolean', Rule::prohibitedIf($type === Property::TYPE_PARKING)],
             'status' => ['required', Rule::in(['active', 'inactive'])],
         ]);
+        if ($type === Property::TYPE_HOUSE) {
+            $validated['address']['country'] = 'FR';
+        }
 
         $isSharedAccommodation = $type !== Property::TYPE_PARKING && $request->boolean('is_shared_accommodation');
         if ($property && ! $isSharedAccommodation && $property->rooms()->exists()) {

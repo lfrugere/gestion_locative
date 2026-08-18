@@ -45,7 +45,7 @@
                 @if ($property->building)
                     <a class="related-entity" href="{{ route('admin.buildings.show', $property->building) }}"><span class="entity-mark">I</span><span><strong>{{ $property->building->name }}</strong><small>{{ $property->building->reference }} · {{ $mapAddress->line1 }}, {{ $mapAddress->city }}</small></span><span class="row-arrow">→</span></a>
                 @elseif ($property->address)
-                    <p class="address-value">{{ $property->address->line1 }}@if($property->address->line2)<br>{{ $property->address->line2 }}@endif<br>{{ $property->address->postal_code }} {{ $property->address->city }}<br>{{ $property->address->country }}</p>
+                    <p class="address-value">{{ $property->address->line1 }}@if($property->address->line2)<br>{{ $property->address->line2 }}@endif<br>{{ $property->address->postal_code }} {{ $property->address->city }}<br>France</p>
                 @endif
             </section>
 
