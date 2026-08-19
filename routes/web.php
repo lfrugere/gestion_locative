@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\PropertyController;
 use App\Http\Controllers\Admin\PropertyRoomController;
 use App\Http\Controllers\Admin\SystemCheckController;
 use App\Http\Controllers\Admin\TenantController;
+use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -170,5 +171,20 @@ Route::middleware(['auth', 'permission:access admin'])
                 ->name('tenants.notes.store');
             Route::put('/notes/{note}', [NoteController::class, 'update'])->name('notes.update');
             Route::delete('/notes/{note}', [NoteController::class, 'destroy'])->name('notes.destroy');
+        });
+
+        Route::middleware('permission:manage users')->group(function () {
+            Route::get('/users', [UserController::class, 'index'])->name('users.index');
+            Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+            Route::post('/users', [UserController::class, 'store'])->name('users.store');
+            Route::get('/users/{user}/edit', [UserController::class, 'edit'])
+                ->whereNumber('user')
+                ->name('users.edit');
+            Route::put('/users/{user}', [UserController::class, 'update'])
+                ->whereNumber('user')
+                ->name('users.update');
+            Route::delete('/users/{user}', [UserController::class, 'destroy'])
+                ->whereNumber('user')
+                ->name('users.destroy');
         });
     });

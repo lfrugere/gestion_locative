@@ -14,8 +14,13 @@
         @can('manage system')
             <a href="{{ route('system-checks.index') }}"><span class="entity-mark">C</span><span><strong>Configuration</strong><small>Vérifications système.</small></span><span class="row-arrow">→</span></a>
         @endcan
+        @can('manage users')
+            <a href="{{ route('users.index') }}"><span class="entity-mark">U</span><span><strong>Utilisateurs</strong><small>Gestion des comptes et des rôles.</small></span><span class="row-arrow">→</span></a>
+        @endcan
     </div>
     @cannot('manage system')
-        <p class="empty">Cette section est vide pour l’instant.</p>
+        @cannot('manage users')
+            <p class="empty">Cette section est vide pour l’instant.</p>
+        @endcannot
     @endcannot
 @endsection

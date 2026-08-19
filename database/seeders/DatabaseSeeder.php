@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             'manage tenants',
             'manage notes',
             'manage system',
+            'manage users',
         ];
 
         foreach ($permissions as $permission) {
