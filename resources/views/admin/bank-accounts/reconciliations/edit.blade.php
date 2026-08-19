@@ -72,7 +72,7 @@
                 <div class="card table-wrap">
                     <table>
                         <tbody>
-                            <tr><td>Solde d’ouverture</td><td style="text-align: right;">{{ number_format($openingBalance, 2, ',', ' ') }} €</td></tr>
+                            <tr><td>Dernier relevé</td><td style="text-align: right;">{{ number_format($openingBalance, 2, ',', ' ') }} €</td></tr>
                             <tr><td>Solde du relevé (à atteindre)</td><td style="text-align: right;">{{ number_format($reconciliation->statement_balance, 2, ',', ' ') }} €</td></tr>
                             <tr><td>Mouvement attendu</td><td style="text-align: right;">{{ number_format($expectedTotal, 2, ',', ' ') }} €</td></tr>
                             <tr><td>Total pointé ci-dessous</td><td style="text-align: right;">{{ number_format($pointedTotal, 2, ',', ' ') }} €</td></tr>

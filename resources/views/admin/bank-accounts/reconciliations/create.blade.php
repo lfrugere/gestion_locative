@@ -15,13 +15,13 @@
     <div class="detail-grid">
         <div class="detail-main">
             <section class="detail-panel">
-                <div class="panel-heading"><div><span class="panel-kicker">Point de départ</span><h2>Solde d’ouverture</h2></div></div>
+                <div class="panel-heading"><div><span class="panel-kicker">Dernier relevé</span><h2>Solde retenu</h2></div></div>
                 <p class="address-value">
-                    Solde d’ouverture retenu : {{ number_format($openingBalance, 2, ',', ' ') }} € au {{ $openingDate->format('d/m/Y') }}<br>
+                    Dernier relevé : {{ number_format($openingBalance, 2, ',', ' ') }} € au {{ $openingDate->format('d/m/Y') }}<br>
                     @if ($isFirstReconciliation)
-                        <span class="hint">C’est le premier rapprochement de ce compte : ce solde correspond au solde initial du compte.</span>
+                        <span class="hint">C’est le premier rapprochement de ce compte : c’est le solde initial du compte qui sert de référence.</span>
                     @else
-                        <span class="hint">Ce solde correspond au dernier rapprochement clôturé.</span>
+                        <span class="hint">Il s’agit du solde de votre dernier rapprochement clôturé.</span>
                     @endif
                 </p>
             </section>
