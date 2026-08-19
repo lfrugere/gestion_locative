@@ -34,7 +34,7 @@
 
             @include('admin._media', ['media' => $tenant->media, 'mediable' => $tenant, 'managePermission' => 'manage tenants', 'uploadRoute' => route('tenants.media.store', $tenant), 'singlePhoto' => true])
 
-            @include('admin._notes', ['notes' => $tenant->notes, 'managePermission' => 'manage tenants', 'storeRoute' => route('tenants.notes.store', $tenant)])
+            @include('admin._notes', ['notes' => $tenant->notes, 'managePermission' => 'manage notes', 'storeRoute' => route('tenants.notes.store', $tenant)])
 
             @can('manage tenants')
                 <form class="danger-zone" method="POST" action="{{ route('tenants.destroy', $tenant) }}" onsubmit="return confirm('Supprimer ce locataire ?')">

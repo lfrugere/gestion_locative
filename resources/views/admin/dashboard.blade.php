@@ -33,19 +33,21 @@
     </section>
 
     <div class="dashboard-grid">
-        <section class="detail-panel dashboard-panel">
-            <div class="panel-heading"><div><span class="panel-kicker">À compléter</span><h2>Points d’attention</h2></div><span class="panel-icon">✓</span></div>
-            <div class="attention-list">
-                <a href="{{ route('properties.index') }}"><span class="attention-count">{{ $attention['propertiesWithoutPhoto'] }}</span><span><strong>bien{{ $attention['propertiesWithoutPhoto'] > 1 ? 's' : '' }} sans photo</strong><small>Ajoutez une photo pour mieux repérer chaque bien.</small></span><span class="row-arrow">→</span></a>
-                <a href="{{ route('buildings.index') }}"><span class="attention-count">{{ $attention['buildingsWithoutPhoto'] }}</span><span><strong>immeuble{{ $attention['buildingsWithoutPhoto'] > 1 ? 's' : '' }} sans photo</strong><small>Une photo améliore leur identification dans les listes.</small></span><span class="row-arrow">→</span></a>
-                <a href="{{ route('buildings.index') }}"><span class="attention-count">{{ $attention['addressesWithoutCoordinates'] }}</span><span><strong>adresse{{ $attention['addressesWithoutCoordinates'] > 1 ? 's' : '' }} non géocodée{{ $attention['addressesWithoutCoordinates'] > 1 ? 's' : '' }}</strong><small>La carte sera disponible une fois les coordonnées enregistrées.</small></span><span class="row-arrow">→</span></a>
-            </div>
-        </section>
+        @canany(['manage buildings', 'manage properties'])
+            <section class="detail-panel dashboard-panel">
+                <div class="panel-heading"><div><span class="panel-kicker">À compléter</span><h2>Points d’attention</h2></div><span class="panel-icon">✓</span></div>
+                <div class="attention-list">
+                    <a href="{{ route('properties.index') }}"><span class="attention-count">{{ $attention['propertiesWithoutPhoto'] }}</span><span><strong>bien{{ $attention['propertiesWithoutPhoto'] > 1 ? 's' : '' }} sans photo</strong><small>Ajoutez une photo pour mieux repérer chaque bien.</small></span><span class="row-arrow">→</span></a>
+                    <a href="{{ route('buildings.index') }}"><span class="attention-count">{{ $attention['buildingsWithoutPhoto'] }}</span><span><strong>immeuble{{ $attention['buildingsWithoutPhoto'] > 1 ? 's' : '' }} sans photo</strong><small>Une photo améliore leur identification dans les listes.</small></span><span class="row-arrow">→</span></a>
+                    <a href="{{ route('buildings.index') }}"><span class="attention-count">{{ $attention['addressesWithoutCoordinates'] }}</span><span><strong>adresse{{ $attention['addressesWithoutCoordinates'] > 1 ? 's' : '' }} non géocodée{{ $attention['addressesWithoutCoordinates'] > 1 ? 's' : '' }}</strong><small>La carte sera disponible une fois les coordonnées enregistrées.</small></span><span class="row-arrow">→</span></a>
+                </div>
+            </section>
+        @endcanany
 
         <section class="detail-panel dashboard-panel">
-            <div class="panel-heading"><div><span class="panel-kicker">Accès rapide</span><h2>Gérer le patrimoine</h2></div><span class="panel-icon">↗</span></div>
+            <div class="panel-heading"><div><span class="panel-kicker">Accès rapide</span><h2>Consulter le patrimoine</h2></div><span class="panel-icon">↗</span></div>
             <div class="quick-links">
-                <a href="{{ route('buildings.index') }}"><span class="entity-mark">I</span><span><strong>Immeubles</strong><small>Consulter et gérer les bâtiments.</small></span><span class="row-arrow">→</span></a>
+                <a href="{{ route('buildings.index') }}"><span class="entity-mark">I</span><span><strong>Immeubles</strong><small>Consulter les bâtiments et laisser des notes.</small></span><span class="row-arrow">→</span></a>
                 <a href="{{ route('properties.index') }}"><span class="entity-mark">B</span><span><strong>Biens immobiliers</strong><small>Appartements, maisons et parkings.</small></span><span class="row-arrow">→</span></a>
                 @can('view tenants')
                     <a href="{{ route('tenants.index') }}"><span class="entity-mark">L</span><span><strong>Locataires</strong><small>Consulter les dossiers locataires.</small></span><span class="row-arrow">→</span></a>

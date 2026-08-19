@@ -50,7 +50,7 @@
 
             @include('admin._media', ['media' => $building->media, 'mediable' => $building, 'managePermission' => 'manage buildings', 'uploadRoute' => route('buildings.media.store', $building)])
 
-            @include('admin._notes', ['notes' => $building->notes, 'managePermission' => 'manage buildings', 'storeRoute' => route('buildings.notes.store', $building)])
+            @include('admin._notes', ['notes' => $building->notes, 'managePermission' => 'manage notes', 'storeRoute' => route('buildings.notes.store', $building)])
 
             @can('manage buildings')
                 <form class="danger-zone" method="POST" action="{{ route('buildings.destroy', $building) }}" onsubmit="return confirm('Supprimer cet immeuble ?')">

@@ -78,15 +78,7 @@ class NoteController extends Controller
     {
         $user = auth()->user();
 
-        $hasParentPermission = match ($note->notable_type) {
-            Building::class => $user->can('manage buildings'),
-            Property::class => $user->can('manage properties'),
-            PropertyRoom::class => $user->can('manage properties'),
-            Tenant::class => $user->can('manage tenants'),
-            default => false,
-        };
-
-        if (! $hasParentPermission) {
+        if (! $user->can('manage notes')) {
             return false;
         }
 

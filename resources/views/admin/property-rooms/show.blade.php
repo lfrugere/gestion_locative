@@ -36,7 +36,7 @@
 
             @include('admin._media', ['media' => $room->media, 'mediable' => $room, 'managePermission' => 'manage properties', 'uploadRoute' => route('property-rooms.media.store', [$property, $room])])
 
-            @include('admin._notes', ['notes' => $room->notes, 'managePermission' => 'manage properties', 'storeRoute' => route('property-rooms.notes.store', [$property, $room])])
+            @include('admin._notes', ['notes' => $room->notes, 'managePermission' => 'manage notes', 'storeRoute' => route('property-rooms.notes.store', [$property, $room])])
 
             @can('manage properties')
                 <form class="danger-zone" method="POST" action="{{ route('property-rooms.destroy', [$property, $room]) }}" onsubmit="return confirm('Supprimer cette pièce ?')">

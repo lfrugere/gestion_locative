@@ -603,7 +603,7 @@ class AdminBackOfficeTest extends TestCase
             ->assertDontSee($activeTenant->fullName());
     }
 
-    public function test_admin_can_manage_tenant_media_and_manager_can_manage_tenants(): void
+    public function test_admin_can_manage_tenant_media_and_manager_has_read_only_access(): void
     {
         $tenant = Tenant::create([
             'civility' => Tenant::CIVILITY_MR,
@@ -667,7 +667,7 @@ class AdminBackOfficeTest extends TestCase
 
         $this->actingAs($manager)
             ->get(route('tenants.create'))
-            ->assertOk();
+            ->assertForbidden();
 
         $this->actingAs($manager)
             ->post(route('tenants.store'), [
@@ -676,7 +676,7 @@ class AdminBackOfficeTest extends TestCase
                 'first_name' => 'Sophie',
                 'status' => Tenant::STATUS_CANDIDATE,
             ])
-            ->assertRedirect(route('tenants.index', ['status' => Tenant::STATUS_CANDIDATE]));
+            ->assertForbidden();
     }
 
     public function test_admin_can_add_edit_and_delete_a_note_on_a_building(): void
@@ -721,7 +721,7 @@ class AdminBackOfficeTest extends TestCase
         $this->assertDatabaseMissing('notes', ['id' => $note->id]);
     }
 
-    public function test_note_add_permission_matches_manage_permission_on_the_parent(): void
+    public function test_manager_can_add_notes_on_any_entity_but_not_a_locataire(): void
     {
         $manager = User::factory()->create();
         $manager->assignRole('gestionnaire');
@@ -729,10 +729,10 @@ class AdminBackOfficeTest extends TestCase
         $building = $this->createBuilding();
 
         $this->actingAs($manager)
-            ->post(route('buildings.notes.store', $building), ['body' => 'Non autorisé'])
-            ->assertForbidden();
+            ->post(route('buildings.notes.store', $building), ['body' => 'Autorisé'])
+            ->assertRedirect(route('buildings.show', $building));
 
-        $this->assertDatabaseCount('notes', 0);
+        $this->assertDatabaseCount('notes', 1);
 
         $tenant = Tenant::create([
             'civility' => Tenant::CIVILITY_MR,
@@ -742,10 +742,19 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($manager)
-            ->post(route('tenants.notes.store', $tenant), ['body' => 'Autorisé'])
+            ->post(route('tenants.notes.store', $tenant), ['body' => 'Autorisé aussi'])
             ->assertRedirect(route('tenants.show', $tenant));
 
-        $this->assertDatabaseCount('notes', 1);
+        $this->assertDatabaseCount('notes', 2);
+
+        $locataire = User::factory()->create();
+        $locataire->assignRole('locataire');
+
+        $this->actingAs($locataire)
+            ->post(route('buildings.notes.store', $building), ['body' => 'Non autorisé'])
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('notes', 2);
     }
 
     public function test_only_the_author_or_admin_can_edit_or_delete_a_note(): void
