@@ -11,6 +11,7 @@
             <p class="detail-lead">Cochez les écritures qui figurent sur votre relevé bancaire, puis enregistrez. Clôturez une fois l’écart à zéro.</p>
         </div>
         <div class="detail-hero-actions">
+            <a class="button secondary" href="{{ route('bank-accounts.show', $bankAccount) }}">Retour</a>
             <form method="POST" action="{{ route('bank-accounts.reconciliations.destroy', [$bankAccount, $reconciliation]) }}" onsubmit="return confirm('Supprimer ce rapprochement ?')">
                 @csrf
                 @method('DELETE')
@@ -81,14 +82,12 @@
                     </table>
                 </div>
 
-                @if ($balanced)
-                    <form method="POST" action="{{ route('bank-accounts.reconciliations.close', [$bankAccount, $reconciliation]) }}">
-                        @csrf
-                        <div class="form-actions"><button class="button" type="submit">Clôturer le rapprochement</button></div>
-                    </form>
-                @else
-                    <p class="empty compact">L’écart doit être nul pour pouvoir clôturer le rapprochement.</p>
-                @endif
+                <form method="POST" action="{{ route('bank-accounts.reconciliations.close', [$bankAccount, $reconciliation]) }}">
+                    @csrf
+                    <div class="form-actions">
+                        <button class="button" type="submit" @disabled(! $balanced) title="{{ $balanced ? '' : 'L’écart doit être nul pour pouvoir clôturer le rapprochement.' }}">Clôturer le rapprochement</button>
+                    </div>
+                </form>
             </section>
         </aside>
     </div>

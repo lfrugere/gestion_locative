@@ -32,6 +32,7 @@
             .button { display: inline-block; padding: 8px 13px; border: 0; border-radius: 8px; color: #fff; background: #2a9d8f; cursor: pointer; font: inherit; font-weight: 700; }
             .button:hover { background: #23877b; text-decoration: none; }
             .button.secondary { color: #344054; background: #eaecf0; }
+            .button:disabled, .button:disabled:hover { background: #d0d5dd; color: #98a2b3; cursor: not-allowed; }
             .card { padding: 20px; border: 1px solid #eaecf0; border-radius: 14px; background: #fff; box-shadow: 0 8px 24px rgba(16, 24, 40, .05); }
             .flash { margin-bottom: 20px; padding: 12px 15px; border-radius: 9px; color: #067647; background: #ecfdf3; }
             .table-wrap { overflow-x: auto; }
