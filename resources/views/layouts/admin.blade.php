@@ -247,7 +247,8 @@
                         || request()->routeIs('buildings.*')
                         || request()->routeIs('properties.*')
                         || request()->routeIs('property-rooms.*')
-                        || request()->routeIs('tenants.*');
+                        || request()->routeIs('tenants.*')
+                        || request()->routeIs('bank-accounts.*');
                     $administrationsActive = request()->routeIs('administrations')
                         || request()->routeIs('system-checks.*')
                         || request()->routeIs('users.*');
@@ -270,7 +271,7 @@
                         </div>
                     @endif
 
-                    @canany(['view buildings', 'view properties', 'view tenants'])
+                    @canany(['view buildings', 'view properties', 'view tenants', 'view bank accounts'])
                         <a class="nav-group-header {{ $adminLocativeActive ? 'active' : '' }}" href="{{ route('admin-locative') }}">
                             <span>Admin Locative</span>
                             <span class="chevron">{{ $adminLocativeActive ? '⌃' : '⌄' }}</span>
@@ -285,6 +286,9 @@
                                 @endcan
                                 @can('view tenants')
                                     <a href="{{ route('tenants.index') }}">Locataires</a>
+                                @endcan
+                                @can('view bank accounts')
+                                    <a href="{{ route('bank-accounts.index') }}">Comptes Bancaires</a>
                                 @endcan
                             </div>
                         @endif
