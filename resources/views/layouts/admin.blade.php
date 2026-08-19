@@ -249,7 +249,8 @@
                         || request()->routeIs('property-rooms.*')
                         || request()->routeIs('tenants.*');
                     $administrationsActive = request()->routeIs('administrations')
-                        || request()->routeIs('system-checks.*');
+                        || request()->routeIs('system-checks.*')
+                        || request()->routeIs('users.*');
                 @endphp
 
                 <nav class="nav-group" aria-label="Menus">
@@ -289,17 +290,22 @@
                         @endif
                     @endcanany
 
-                    @can('manage system')
+                    @canany(['manage system', 'manage users'])
                     <a class="nav-group-header {{ $administrationsActive ? 'active' : '' }}" href="{{ route('administrations') }}">
                         <span>Admin Général</span>
                         <span class="chevron">{{ $administrationsActive ? '⌃' : '⌄' }}</span>
                     </a>
                     @if ($administrationsActive)
                         <div class="nav-submenu">
-                            <a href="{{ route('system-checks.index') }}">Configuration</a>
+                            @can('manage system')
+                                <a href="{{ route('system-checks.index') }}">Configuration</a>
+                            @endcan
+                            @can('manage users')
+                                <a href="{{ route('users.index') }}">Utilisateurs</a>
+                            @endcan
                         </div>
                     @endif
-                    @endcan
+                    @endcanany
                 </nav>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
