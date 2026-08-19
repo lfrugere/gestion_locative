@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\BankAccountController;
+use App\Http\Controllers\Admin\BankTransactionController;
 use App\Http\Controllers\Admin\BuildingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
@@ -75,6 +77,36 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::post('/buildings/{building}/media', [MediaController::class, 'storeBuilding'])
                 ->whereNumber('building')
                 ->name('buildings.media.store');
+        });
+
+        Route::middleware('permission:view bank accounts')->group(function () {
+            Route::get('/bank-accounts', [BankAccountController::class, 'index'])
+                ->name('bank-accounts.index');
+            Route::get('/bank-accounts/{bankAccount}', [BankAccountController::class, 'show'])
+                ->whereNumber('bankAccount')
+                ->name('bank-accounts.show');
+        });
+
+        Route::middleware('permission:manage bank accounts')->group(function () {
+            Route::get('/bank-accounts/create', [BankAccountController::class, 'create'])
+                ->name('bank-accounts.create');
+            Route::post('/bank-accounts', [BankAccountController::class, 'store'])
+                ->name('bank-accounts.store');
+            Route::get('/bank-accounts/{bankAccount}/edit', [BankAccountController::class, 'edit'])
+                ->whereNumber('bankAccount')
+                ->name('bank-accounts.edit');
+            Route::put('/bank-accounts/{bankAccount}', [BankAccountController::class, 'update'])
+                ->whereNumber('bankAccount')
+                ->name('bank-accounts.update');
+            Route::delete('/bank-accounts/{bankAccount}', [BankAccountController::class, 'destroy'])
+                ->whereNumber('bankAccount')
+                ->name('bank-accounts.destroy');
+            Route::post('/bank-accounts/{bankAccount}/transactions', [BankTransactionController::class, 'store'])
+                ->whereNumber('bankAccount')
+                ->name('bank-accounts.transactions.store');
+            Route::delete('/bank-accounts/{bankAccount}/transactions/{transaction}', [BankTransactionController::class, 'destroy'])
+                ->whereNumber(['bankAccount', 'transaction'])
+                ->name('bank-accounts.transactions.destroy');
         });
 
         Route::middleware('permission:view properties')->group(function () {

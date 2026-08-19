@@ -30,6 +30,8 @@ class DatabaseSeeder extends Seeder
             'manage properties',
             'view tenants',
             'manage tenants',
+            'view bank accounts',
+            'manage bank accounts',
             'manage notes',
             'manage system',
             'manage users',
@@ -50,6 +52,7 @@ class DatabaseSeeder extends Seeder
             'view buildings',
             'view properties',
             'view tenants',
+            'view bank accounts',
             'manage notes',
         ]);
 
