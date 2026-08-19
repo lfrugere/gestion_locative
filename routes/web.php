@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\BankAccountController;
+use App\Http\Controllers\Admin\BankReconciliationController;
 use App\Http\Controllers\Admin\BankTransactionController;
 use App\Http\Controllers\Admin\BuildingController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -107,6 +108,25 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::delete('/bank-accounts/{bankAccount}/transactions/{transaction}', [BankTransactionController::class, 'destroy'])
                 ->whereNumber(['bankAccount', 'transaction'])
                 ->name('bank-accounts.transactions.destroy');
+
+            Route::get('/bank-accounts/{bankAccount}/reconciliations/create', [BankReconciliationController::class, 'create'])
+                ->whereNumber('bankAccount')
+                ->name('bank-accounts.reconciliations.create');
+            Route::post('/bank-accounts/{bankAccount}/reconciliations', [BankReconciliationController::class, 'store'])
+                ->whereNumber('bankAccount')
+                ->name('bank-accounts.reconciliations.store');
+            Route::get('/bank-accounts/{bankAccount}/reconciliations/{reconciliation}/edit', [BankReconciliationController::class, 'edit'])
+                ->whereNumber(['bankAccount', 'reconciliation'])
+                ->name('bank-accounts.reconciliations.edit');
+            Route::patch('/bank-accounts/{bankAccount}/reconciliations/{reconciliation}', [BankReconciliationController::class, 'update'])
+                ->whereNumber(['bankAccount', 'reconciliation'])
+                ->name('bank-accounts.reconciliations.update');
+            Route::post('/bank-accounts/{bankAccount}/reconciliations/{reconciliation}/close', [BankReconciliationController::class, 'close'])
+                ->whereNumber(['bankAccount', 'reconciliation'])
+                ->name('bank-accounts.reconciliations.close');
+            Route::delete('/bank-accounts/{bankAccount}/reconciliations/{reconciliation}', [BankReconciliationController::class, 'destroy'])
+                ->whereNumber(['bankAccount', 'reconciliation'])
+                ->name('bank-accounts.reconciliations.destroy');
         });
 
         Route::middleware('permission:view properties')->group(function () {

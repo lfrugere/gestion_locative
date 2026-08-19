@@ -30,6 +30,11 @@ class BankTransactionController extends Controller
 
     public function destroy(BankAccount $bankAccount, BankTransaction $transaction): RedirectResponse
     {
+        if ($transaction->isLocked()) {
+            return to_route('bank-accounts.show', $bankAccount)
+                ->with('error', 'Cette écriture appartient à un rapprochement clôturé et ne peut pas être supprimée.');
+        }
+
         DB::transaction(function () use ($bankAccount, $transaction): void {
             $bankAccount->decrement('balance', $transaction->amount);
             $transaction->delete();

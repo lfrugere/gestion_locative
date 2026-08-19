@@ -40,10 +40,34 @@ class BankAccountController extends Controller
         ]);
     }
 
-    public function show(BankAccount $bankAccount): View
+    public function show(Request $request, BankAccount $bankAccount): View
     {
+        $bankAccount->load(['manager', 'reconciliations.createdBy']);
+
+        $filters = $request->only(['q', 'date_from', 'date_to', 'status']);
+
+        $transactions = $bankAccount->transactions()
+            ->with('reconciliation')
+            ->when($filters['q'] ?? null, fn ($query, $q) => $query->where('label', 'like', '%'.$q.'%'))
+            ->when($filters['date_from'] ?? null, fn ($query, $date) => $query->whereDate('date', '>=', $date))
+            ->when($filters['date_to'] ?? null, fn ($query, $date) => $query->whereDate('date', '<=', $date))
+            ->when($filters['status'] ?? null, function ($query, $status) {
+                if ($status === 'reconciled') {
+                    $query->whereHas('reconciliation', fn ($q) => $q->whereNotNull('closed_at'));
+                } elseif ($status === 'unreconciled') {
+                    $query->where(function ($q) {
+                        $q->whereNull('bank_reconciliation_id')
+                            ->orWhereHas('reconciliation', fn ($q2) => $q2->whereNull('closed_at'));
+                    });
+                }
+            })
+            ->get();
+
         return view('admin.bank-accounts.show', [
-            'bankAccount' => $bankAccount->load(['manager', 'transactions']),
+            'bankAccount' => $bankAccount,
+            'transactions' => $transactions,
+            'filters' => $filters,
+            'openReconciliation' => $bankAccount->reconciliations()->whereNull('closed_at')->first(),
         ]);
     }
 

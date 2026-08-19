@@ -28,4 +28,9 @@ class BankAccount extends Model
     {
         return $this->hasMany(BankTransaction::class)->latest('date');
     }
+
+    public function reconciliations(): HasMany
+    {
+        return $this->hasMany(BankReconciliation::class)->latest('statement_date');
+    }
 }
