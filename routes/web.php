@@ -31,7 +31,9 @@ Route::middleware(['auth', 'permission:access admin'])
 
         Route::view('/gestion-locative', 'menus.gestion-locative')->name('gestion-locative');
         Route::view('/mes-contrats', 'menus.mes-contrats')->name('mes-contrats');
-        Route::view('/administrations', 'menus.administrations')->name('administrations');
+        Route::view('/administrations', 'menus.administrations')
+            ->middleware('permission:manage system|manage users')
+            ->name('administrations');
 
         Route::middleware('permission:view properties')->group(function () {
             Route::get('/mes-biens', [PortfolioController::class, 'myProperties'])->name('mes-biens');

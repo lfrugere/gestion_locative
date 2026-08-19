@@ -18,8 +18,4 @@
             <a href="{{ route('users.index') }}"><span class="entity-mark">U</span><span><strong>Utilisateurs</strong><small>Gestion des comptes et des rôles.</small></span><span class="row-arrow">→</span></a>
         @endcan
     </div>
-    @canany(['manage system', 'manage users'])
-    @else
-        <p class="empty">Cette section est vide pour l’instant.</p>
-    @endcanany
 @endsection
