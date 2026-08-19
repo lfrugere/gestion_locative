@@ -35,7 +35,7 @@ class MediaControllerTest extends TestCase
         $originalPath = $media->path;
 
         $this->actingAs($this->admin())
-            ->put(route('admin.media.update', $media), [
+            ->put(route('media.update', $media), [
                 'type' => Media::TYPE_INSURANCE,
                 'display_name' => 'Attestation assurance',
             ])
@@ -54,7 +54,7 @@ class MediaControllerTest extends TestCase
         $media = $this->createDocument($building, Media::TYPE_DIAGNOSTICS);
 
         $this->actingAs($this->admin())
-            ->put(route('admin.media.update', $media), [
+            ->put(route('media.update', $media), [
                 'type' => Media::TYPE_IDENTITY,
                 'display_name' => 'Pièce identité',
             ])
@@ -67,7 +67,7 @@ class MediaControllerTest extends TestCase
         $media = $this->createDocument($building, Media::TYPE_DIAGNOSTICS);
 
         $this->actingAs($this->manager())
-            ->put(route('admin.media.update', $media), [
+            ->put(route('media.update', $media), [
                 'type' => Media::TYPE_INSURANCE,
                 'display_name' => 'Attestation',
             ])
@@ -81,7 +81,7 @@ class MediaControllerTest extends TestCase
         $second = $this->createPhoto($building);
 
         $this->actingAs($this->admin())
-            ->post(route('admin.media.primary', $second))
+            ->post(route('media.primary', $second))
             ->assertRedirect();
 
         $this->assertTrue($second->fresh()->is_primary);
@@ -94,7 +94,7 @@ class MediaControllerTest extends TestCase
         $document = $this->createDocument($property, Media::TYPE_DIAGNOSTICS);
 
         $this->actingAs($this->admin())
-            ->post(route('admin.media.primary', $document))
+            ->post(route('media.primary', $document))
             ->assertForbidden();
     }
 
@@ -104,7 +104,7 @@ class MediaControllerTest extends TestCase
         $photo = $this->createPhoto($building);
 
         $this->actingAs($this->manager())
-            ->post(route('admin.media.primary', $photo))
+            ->post(route('media.primary', $photo))
             ->assertForbidden();
     }
 
@@ -115,7 +115,7 @@ class MediaControllerTest extends TestCase
         $other = $this->createPhoto($building);
 
         $this->actingAs($this->admin())
-            ->delete(route('admin.media.destroy', $primary))
+            ->delete(route('media.destroy', $primary))
             ->assertRedirect();
 
         $this->assertDatabaseMissing('media', ['id' => $primary->id]);
@@ -128,7 +128,7 @@ class MediaControllerTest extends TestCase
         $photo = $this->createPhoto($building);
 
         $this->actingAs($this->manager())
-            ->delete(route('admin.media.destroy', $photo))
+            ->delete(route('media.destroy', $photo))
             ->assertForbidden();
 
         $this->assertDatabaseHas('media', ['id' => $photo->id]);
@@ -139,7 +139,7 @@ class MediaControllerTest extends TestCase
         $building = $this->createBuilding();
         $media = $this->createPhoto($building);
 
-        $this->get(route('admin.media.download', $media))
+        $this->get(route('media.download', $media))
             ->assertRedirect(route('login'));
     }
 
@@ -152,7 +152,7 @@ class MediaControllerTest extends TestCase
         $user->givePermissionTo('access admin');
 
         $this->actingAs($user)
-            ->get(route('admin.media.download', $media))
+            ->get(route('media.download', $media))
             ->assertForbidden();
     }
 
@@ -162,7 +162,7 @@ class MediaControllerTest extends TestCase
         $media = $this->createPhoto($building);
 
         $this->actingAs($this->manager())
-            ->get(route('admin.media.download', $media))
+            ->get(route('media.download', $media))
             ->assertOk();
     }
 
@@ -171,7 +171,7 @@ class MediaControllerTest extends TestCase
         $building = $this->createBuilding();
 
         $this->actingAs($this->admin())
-            ->post(route('admin.buildings.media.store', $building), [
+            ->post(route('buildings.media.store', $building), [
                 'kind' => 'video',
                 'file' => UploadedFile::fake()->create('a.jpg', 100, 'image/jpeg'),
             ])
@@ -183,7 +183,7 @@ class MediaControllerTest extends TestCase
         $building = $this->createBuilding();
 
         $this->actingAs($this->admin())
-            ->post(route('admin.buildings.media.store', $building), [
+            ->post(route('buildings.media.store', $building), [
                 'kind' => Media::KIND_DOCUMENT,
                 'type' => Media::TYPE_OTHER,
                 'file' => UploadedFile::fake()->create('malware.exe', 100, 'application/octet-stream'),

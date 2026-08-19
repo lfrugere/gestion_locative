@@ -19,19 +19,19 @@ class MediaController extends Controller
 {
     public function storeBuilding(Request $request, Building $building, MediaManager $manager): RedirectResponse
     {
-        return $this->store($request, $building, $manager, 'admin.buildings.show');
+        return $this->store($request, $building, $manager, 'buildings.show');
     }
 
     public function storeProperty(Request $request, Property $property, MediaManager $manager): RedirectResponse
     {
-        return $this->store($request, $property, $manager, 'admin.properties.show');
+        return $this->store($request, $property, $manager, 'properties.show');
     }
 
     public function storePropertyRoom(Request $request, Property $property, PropertyRoom $room, MediaManager $manager): RedirectResponse
     {
         abort_unless($room->property_id === $property->id, 404);
 
-        return $this->store($request, $room, $manager, 'admin.property-rooms.show', [$property, $room]);
+        return $this->store($request, $room, $manager, 'property-rooms.show', [$property, $room]);
     }
 
     public function storeTenant(Request $request, Tenant $tenant, MediaManager $manager): RedirectResponse
@@ -43,7 +43,7 @@ class MediaController extends Controller
             ]);
         }
 
-        return $this->store($request, $tenant, $manager, 'admin.tenants.show');
+        return $this->store($request, $tenant, $manager, 'tenants.show');
     }
 
     public function update(Request $request, Media $media, MediaManager $manager): RedirectResponse

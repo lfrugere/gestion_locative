@@ -8,13 +8,13 @@
 
     <section class="detail-hero">
         <div class="detail-hero-copy">
-            <a class="back-link" href="{{ route('admin.properties.index') }}">← Tous les biens</a>
+            <a class="back-link" href="{{ route('properties.index') }}">← Tous les biens</a>
             <div class="eyebrow">{{ $property->typeLabel() }} · {{ $property->reference }}</div>
             <h1>{{ $property->name }}</h1>
             <p class="detail-lead">{{ $property->building?->name ?? $mapAddress?->city ?? 'Adresse à compléter' }}</p>
         </div>
         @if ($primaryPhoto)
-            <figure class="detail-hero-photo"><img src="{{ route('admin.media.download', $primaryPhoto) }}" alt="{{ $primaryPhoto->display_name }}"></figure>
+            <figure class="detail-hero-photo"><img src="{{ route('media.download', $primaryPhoto) }}" alt="{{ $primaryPhoto->display_name }}"></figure>
         @endif
         <div class="detail-hero-actions">
             @if ($property->is_shared_accommodation)
@@ -22,7 +22,7 @@
             @endif
             <span class="status-pill {{ $property->status === 'active' ? 'status-active' : 'status-muted' }}">{{ $property->status === 'active' ? 'Actif' : 'Inactif' }}</span>
             @can('manage properties')
-                <a class="button secondary" href="{{ route('admin.properties.edit', $property) }}">Modifier</a>
+                <a class="button secondary" href="{{ route('properties.edit', $property) }}">Modifier</a>
             @endcan
         </div>
     </section>
@@ -43,7 +43,7 @@
             <section class="detail-panel address-panel">
                 <div class="panel-heading"><div><span class="panel-kicker">Rattachement</span><h2>{{ $property->building ? 'Immeuble' : 'Adresse' }}</h2></div><span class="panel-icon">⌖</span></div>
                 @if ($property->building)
-                    <a class="related-entity" href="{{ route('admin.buildings.show', $property->building) }}"><span class="entity-mark">I</span><span><strong>{{ $property->building->name }}</strong><small>{{ $property->building->reference }} · {{ $mapAddress->line1 }}, {{ $mapAddress->city }}</small></span><span class="row-arrow">→</span></a>
+                    <a class="related-entity" href="{{ route('buildings.show', $property->building) }}"><span class="entity-mark">I</span><span><strong>{{ $property->building->name }}</strong><small>{{ $property->building->reference }} · {{ $mapAddress->line1 }}, {{ $mapAddress->city }}</small></span><span class="row-arrow">→</span></a>
                 @elseif ($property->address)
                     <p class="address-value">{{ $property->address->line1 }}@if($property->address->line2)<br>{{ $property->address->line2 }}@endif<br>{{ $property->address->postal_code }} {{ $property->address->city }}<br>France</p>
                 @endif
@@ -54,14 +54,14 @@
                     <div class="panel-heading">
                         <div><span class="panel-kicker">Colocation</span><h2>Pièces</h2></div>
                         @can('manage properties')
-                            <a class="button secondary" href="{{ route('admin.property-rooms.create', $property) }}">Ajouter une pièce</a>
+                            <a class="button secondary" href="{{ route('property-rooms.create', $property) }}">Ajouter une pièce</a>
                         @endcan
                     </div>
                     @forelse ($property->rooms as $room)
                         @php($roomPhoto = $room->media->first(fn ($media) => $media->isPhoto() && $media->is_primary))
-                        <a class="associated-row room-row" href="{{ route('admin.property-rooms.show', [$property, $room]) }}">
+                        <a class="associated-row room-row" href="{{ route('property-rooms.show', [$property, $room]) }}">
                             @if ($roomPhoto)
-                                <img class="list-thumb" src="{{ route('admin.media.download', $roomPhoto) }}" alt="">
+                                <img class="list-thumb" src="{{ route('media.download', $roomPhoto) }}" alt="">
                             @else
                                 <span class="entity-mark">P</span>
                             @endif
@@ -75,12 +75,12 @@
                 </section>
             @endif
 
-            @include('admin._media', ['media' => $property->media, 'mediable' => $property, 'managePermission' => 'manage properties', 'uploadRoute' => route('admin.properties.media.store', $property)])
+            @include('admin._media', ['media' => $property->media, 'mediable' => $property, 'managePermission' => 'manage properties', 'uploadRoute' => route('properties.media.store', $property)])
 
-            @include('admin._notes', ['notes' => $property->notes, 'managePermission' => 'manage properties', 'storeRoute' => route('admin.properties.notes.store', $property)])
+            @include('admin._notes', ['notes' => $property->notes, 'managePermission' => 'manage properties', 'storeRoute' => route('properties.notes.store', $property)])
 
             @can('manage properties')
-                <form class="danger-zone" method="POST" action="{{ route('admin.properties.destroy', $property) }}" onsubmit="return confirm('Supprimer ce bien ?')">
+                <form class="danger-zone" method="POST" action="{{ route('properties.destroy', $property) }}" onsubmit="return confirm('Supprimer ce bien ?')">
                     @csrf @method('DELETE')
                     <div><strong>Supprimer le bien</strong><p>Les pièces jointes et les photos associées seront également supprimées.</p></div>
                     <button class="button danger" type="submit">Supprimer</button>

@@ -7,18 +7,18 @@
 
     <section class="detail-hero">
         <div class="detail-hero-copy">
-            <a class="back-link" href="{{ route('admin.properties.show', $property) }}">← {{ $property->name }}</a>
+            <a class="back-link" href="{{ route('properties.show', $property) }}">← {{ $property->name }}</a>
             <div class="eyebrow">{{ $property->reference }}</div>
             <h1>{{ $room->name }}</h1>
             <p class="detail-lead">{{ $property->name }} · Colocation</p>
         </div>
         @if ($primaryPhoto)
-            <figure class="detail-hero-photo"><img src="{{ route('admin.media.download', $primaryPhoto) }}" alt="{{ $primaryPhoto->display_name }}"></figure>
+            <figure class="detail-hero-photo"><img src="{{ route('media.download', $primaryPhoto) }}" alt="{{ $primaryPhoto->display_name }}"></figure>
         @endif
         <div class="detail-hero-actions">
             <span class="status-pill {{ $room->status === 'active' ? 'status-active' : 'status-muted' }}">{{ $room->status === 'active' ? 'Active' : 'Inactive' }}</span>
             @can('manage properties')
-                <a class="button secondary" href="{{ route('admin.property-rooms.edit', [$property, $room]) }}">Modifier</a>
+                <a class="button secondary" href="{{ route('property-rooms.edit', [$property, $room]) }}">Modifier</a>
             @endcan
         </div>
     </section>
@@ -34,12 +34,12 @@
                 </div>
             </section>
 
-            @include('admin._media', ['media' => $room->media, 'mediable' => $room, 'managePermission' => 'manage properties', 'uploadRoute' => route('admin.property-rooms.media.store', [$property, $room])])
+            @include('admin._media', ['media' => $room->media, 'mediable' => $room, 'managePermission' => 'manage properties', 'uploadRoute' => route('property-rooms.media.store', [$property, $room])])
 
-            @include('admin._notes', ['notes' => $room->notes, 'managePermission' => 'manage properties', 'storeRoute' => route('admin.property-rooms.notes.store', [$property, $room])])
+            @include('admin._notes', ['notes' => $room->notes, 'managePermission' => 'manage properties', 'storeRoute' => route('property-rooms.notes.store', [$property, $room])])
 
             @can('manage properties')
-                <form class="danger-zone" method="POST" action="{{ route('admin.property-rooms.destroy', [$property, $room]) }}" onsubmit="return confirm('Supprimer cette pièce ?')">
+                <form class="danger-zone" method="POST" action="{{ route('property-rooms.destroy', [$property, $room]) }}" onsubmit="return confirm('Supprimer cette pièce ?')">
                     @csrf @method('DELETE')
                     <div><strong>Supprimer la pièce</strong><p>Les pièces jointes et les photos associées seront également supprimées.</p></div>
                     <button class="button danger" type="submit">Supprimer</button>

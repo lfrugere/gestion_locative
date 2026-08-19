@@ -29,7 +29,7 @@ class PropertyRoomController extends Controller
 
         $property->rooms()->create($this->validated($request));
 
-        return to_route('admin.properties.show', $property)
+        return to_route('properties.show', $property)
             ->with('success', 'La pièce a été ajoutée.');
     }
 
@@ -61,7 +61,7 @@ class PropertyRoomController extends Controller
 
         $room->update($this->validated($request));
 
-        return to_route('admin.property-rooms.show', [$property, $room])
+        return to_route('property-rooms.show', [$property, $room])
             ->with('success', 'La pièce a été modifiée.');
     }
 
@@ -72,7 +72,7 @@ class PropertyRoomController extends Controller
         $room->media->each(fn ($media) => $mediaManager->delete($media));
         $room->delete();
 
-        return to_route('admin.properties.show', $property)
+        return to_route('properties.show', $property)
             ->with('success', 'La pièce a été supprimée.');
     }
 

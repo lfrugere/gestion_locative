@@ -230,20 +230,20 @@
     <body>
         <div class="admin-shell">
             <aside class="admin-nav">
-                <a class="admin-brand" href="{{ route('admin.dashboard') }}">Gestion locative</a>
+                <a class="admin-brand" href="{{ route('dashboard') }}">Gestion locative</a>
                 <nav aria-label="Administration">
-                    <a href="{{ route('admin.dashboard') }}">Vue d’ensemble</a>
+                    <a href="{{ route('dashboard') }}">Vue d’ensemble</a>
                     @can('view buildings')
-                        <a href="{{ route('admin.buildings.index') }}">Immeubles</a>
+                        <a href="{{ route('buildings.index') }}">Immeubles</a>
                     @endcan
                     @can('view properties')
-                        <a href="{{ route('admin.properties.index') }}">Biens</a>
+                        <a href="{{ route('properties.index') }}">Biens</a>
                     @endcan
                     @can('view tenants')
-                        <a href="{{ route('admin.tenants.index') }}">Locataires</a>
+                        <a href="{{ route('tenants.index') }}">Locataires</a>
                     @endcan
                     @can('manage system')
-                        <a href="{{ route('admin.system-checks.index') }}">Configuration</a>
+                        <a href="{{ route('system-checks.index') }}">Configuration</a>
                     @endcan
                 </nav>
                 <form method="POST" action="{{ route('logout') }}">

@@ -71,7 +71,7 @@ class PropertyController extends Controller
             $address?->delete();
         });
 
-        return to_route('admin.properties.index')
+        return to_route('properties.index')
             ->with('success', 'Le bien a été supprimé.');
     }
 
@@ -155,7 +155,7 @@ class PropertyController extends Controller
             $geocoder->geocode(Address::findOrFail($addressId));
         }
 
-        return to_route('admin.properties.index')->with(
+        return to_route('properties.index')->with(
             'success',
             $property ? 'Le bien a été modifié.' : 'Le bien a été créé.',
         );

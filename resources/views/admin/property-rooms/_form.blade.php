@@ -11,5 +11,5 @@
         <div class="form-field"><label for="status">Statut</label><select id="status" name="status" required><option value="active" @selected(old('status', $room->status ?? 'active') === 'active')>Active</option><option value="inactive" @selected(old('status', $room->status ?? '') === 'inactive')>Inactive</option></select></div>
         <div class="form-field full"><label for="notes">Notes</label><textarea id="notes" name="notes">{{ old('notes', $room->notes ?? '') }}</textarea></div>
     </div>
-    <div class="form-actions"><a class="button secondary" href="{{ $room ? route('admin.property-rooms.show', [$property, $room]) : route('admin.properties.show', $property) }}">Annuler</a><button class="button" type="submit">{{ $submitLabel }}</button></div>
+    <div class="form-actions"><a class="button secondary" href="{{ $room ? route('property-rooms.show', [$property, $room]) : route('properties.show', $property) }}">Annuler</a><button class="button" type="submit">{{ $submitLabel }}</button></div>
 </form>

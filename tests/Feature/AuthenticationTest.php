@@ -32,9 +32,12 @@ class AuthenticationTest extends TestCase
 
     public function test_user_can_log_in_and_access_dashboard(): void
     {
+        $this->seed();
+
         $user = User::factory()->create([
             'password' => 'secret-password',
         ]);
+        $user->assignRole('gestionnaire');
 
         $this->post('/login', [
             'email' => $user->email,
@@ -43,8 +46,16 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
         $this->get('/dashboard')
-            ->assertOk()
-            ->assertSee($user->name);
+            ->assertOk();
+    }
+
+    public function test_user_without_access_admin_permission_cannot_view_dashboard(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get('/dashboard')
+            ->assertForbidden();
     }
 
     public function test_user_can_log_out(): void

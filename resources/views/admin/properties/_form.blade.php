@@ -25,7 +25,7 @@
         <div class="form-field" id="address-city-field"><label for="address_city">Ville</label><input id="address_city" name="address[city]" value="{{ old('address.city', $property->address->city ?? '') }}"></div>
         <div class="form-field" id="address-country-field"><label for="address_country">Pays</label><input id="address_country" value="France" disabled></div>
     </div>
-    <div class="form-actions"><a class="button secondary" href="{{ route('admin.properties.index') }}">Annuler</a><button class="button" type="submit">{{ $submitLabel }}</button></div>
+    <div class="form-actions"><a class="button secondary" href="{{ route('properties.index') }}">Annuler</a><button class="button" type="submit">{{ $submitLabel }}</button></div>
 </form>
 <script>
     const typeSelect = document.getElementById('type');

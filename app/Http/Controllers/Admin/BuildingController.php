@@ -56,7 +56,7 @@ class BuildingController extends Controller
     public function destroy(Building $building): RedirectResponse
     {
         if ($building->properties()->exists()) {
-            return to_route('admin.buildings.index')
+            return to_route('buildings.index')
                 ->with('error', 'Impossible de supprimer un immeuble auquel des biens sont rattachés.');
         }
 
@@ -66,7 +66,7 @@ class BuildingController extends Controller
             $address?->delete();
         });
 
-        return to_route('admin.buildings.index')
+        return to_route('buildings.index')
             ->with('success', 'L’immeuble a été supprimé.');
     }
 
@@ -110,7 +110,7 @@ class BuildingController extends Controller
             $geocoder->geocode(Address::findOrFail($addressId));
         }
 
-        return to_route('admin.buildings.index')->with(
+        return to_route('buildings.index')->with(
             'success',
             $building ? 'L’immeuble a été modifié.' : 'L’immeuble a été créé.',
         );

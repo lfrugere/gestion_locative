@@ -16,15 +16,9 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
-Route::view('/dashboard', 'dashboard')
-    ->middleware('auth')
-    ->name('dashboard');
-
 Route::middleware(['auth', 'permission:access admin'])
-    ->prefix('admin')
-    ->name('admin.')
     ->group(function () {
-        Route::get('/', DashboardController::class)->name('dashboard');
+        Route::get('/dashboard', DashboardController::class)->name('dashboard');
         Route::get('/media/{media}/download', [MediaController::class, 'download'])
             ->name('media.download');
 

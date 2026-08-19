@@ -6,17 +6,17 @@
     @php($primaryPhoto = $tenant->media->first(fn ($media) => $media->isPhoto() && $media->is_primary))
     <section class="detail-hero">
         <div class="detail-hero-copy">
-            <a class="back-link" href="{{ route('admin.tenants.index') }}">← Tous les locataires</a>
+            <a class="back-link" href="{{ route('tenants.index') }}">← Tous les locataires</a>
             <div class="eyebrow">Locataire</div>
             <h1>{{ $tenant->fullName() }}</h1>
             <p class="detail-lead">{{ $tenant->civilityLabel() }}</p>
         </div>
         @if ($primaryPhoto)
-            <figure class="detail-hero-photo"><img src="{{ route('admin.media.download', $primaryPhoto) }}" alt="{{ $primaryPhoto->display_name }}"></figure>
+            <figure class="detail-hero-photo"><img src="{{ route('media.download', $primaryPhoto) }}" alt="{{ $primaryPhoto->display_name }}"></figure>
         @endif
         <div class="detail-hero-actions">
             <span class="status-pill status-{{ $tenant->status }}">{{ $tenant->statusLabel() }}</span>
-            @can('manage tenants')<a class="button secondary" href="{{ route('admin.tenants.edit', $tenant) }}">Modifier</a>@endcan
+            @can('manage tenants')<a class="button secondary" href="{{ route('tenants.edit', $tenant) }}">Modifier</a>@endcan
         </div>
     </section>
 
@@ -32,12 +32,12 @@
                 </div>
             </section>
 
-            @include('admin._media', ['media' => $tenant->media, 'mediable' => $tenant, 'managePermission' => 'manage tenants', 'uploadRoute' => route('admin.tenants.media.store', $tenant), 'singlePhoto' => true])
+            @include('admin._media', ['media' => $tenant->media, 'mediable' => $tenant, 'managePermission' => 'manage tenants', 'uploadRoute' => route('tenants.media.store', $tenant), 'singlePhoto' => true])
 
-            @include('admin._notes', ['notes' => $tenant->notes, 'managePermission' => 'manage tenants', 'storeRoute' => route('admin.tenants.notes.store', $tenant)])
+            @include('admin._notes', ['notes' => $tenant->notes, 'managePermission' => 'manage tenants', 'storeRoute' => route('tenants.notes.store', $tenant)])
 
             @can('manage tenants')
-                <form class="danger-zone" method="POST" action="{{ route('admin.tenants.destroy', $tenant) }}" onsubmit="return confirm('Supprimer ce locataire ?')">
+                <form class="danger-zone" method="POST" action="{{ route('tenants.destroy', $tenant) }}" onsubmit="return confirm('Supprimer ce locataire ?')">
                     @csrf @method('DELETE')
                     <div><strong>Supprimer le locataire</strong><p>Les pièces jointes et les photos associées seront également supprimées.</p></div>
                     <button class="button danger" type="submit">Supprimer</button>

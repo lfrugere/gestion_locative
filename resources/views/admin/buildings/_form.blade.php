@@ -14,5 +14,5 @@
         <div class="form-field"><label for="address_city">Ville</label><input id="address_city" name="address[city]" value="{{ old('address.city', $building->address->city ?? '') }}" required></div>
         <div class="form-field"><label for="address_country">Pays</label><input id="address_country" value="France" disabled></div>
     </div>
-    <div class="form-actions"><a class="button secondary" href="{{ route('admin.buildings.index') }}">Annuler</a><button class="button" type="submit">{{ $submitLabel }}</button></div>
+    <div class="form-actions"><a class="button secondary" href="{{ route('buildings.index') }}">Annuler</a><button class="button" type="submit">{{ $submitLabel }}</button></div>
 </form>
