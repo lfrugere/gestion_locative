@@ -7,18 +7,18 @@
 
     <section class="detail-hero">
         <div class="detail-hero-copy">
-            <a class="back-link" href="{{ route('admin.buildings.index') }}">← Tous les immeubles</a>
+            <a class="back-link" href="{{ route('buildings.index') }}">← Tous les immeubles</a>
             <div class="eyebrow">Immeuble · {{ $building->reference }}</div>
             <h1>{{ $building->name }}</h1>
             <p class="detail-lead">{{ $building->address->line1 }}, {{ $building->address->postal_code }} {{ $building->address->city }}</p>
         </div>
         @if ($primaryPhoto)
-            <figure class="detail-hero-photo"><img src="{{ route('admin.media.download', $primaryPhoto) }}" alt="{{ $primaryPhoto->display_name }}"></figure>
+            <figure class="detail-hero-photo"><img src="{{ route('media.download', $primaryPhoto) }}" alt="{{ $primaryPhoto->display_name }}"></figure>
         @endif
         <div class="detail-hero-actions">
             <span class="status-pill status-active">{{ $building->properties->count() }} bien{{ $building->properties->count() > 1 ? 's' : '' }}</span>
             @can('manage buildings')
-                <a class="button secondary" href="{{ route('admin.buildings.edit', $building) }}">Modifier</a>
+                <a class="button secondary" href="{{ route('buildings.edit', $building) }}">Modifier</a>
             @endcan
         </div>
     </section>
@@ -37,7 +37,7 @@
                 @else
                     <div class="associated-list">
                         @foreach ($building->properties as $property)
-                            <a class="associated-row" href="{{ route('admin.properties.show', $property) }}">
+                            <a class="associated-row" href="{{ route('properties.show', $property) }}">
                                 <span class="entity-mark">{{ $property->type === 'parking' ? 'P' : 'A' }}</span>
                                 <span><strong>{{ $property->name }}</strong><small>{{ $property->reference }} · {{ $property->typeLabel() }}@if($property->floor) · Étage {{ $property->floor }}@endif</small></span>
                                 <span class="status-pill {{ $property->status === 'active' ? 'status-active' : 'status-muted' }}">{{ $property->status === 'active' ? 'Actif' : 'Inactif' }}</span>
@@ -48,12 +48,12 @@
                 @endif
             </section>
 
-            @include('admin._media', ['media' => $building->media, 'mediable' => $building, 'managePermission' => 'manage buildings', 'uploadRoute' => route('admin.buildings.media.store', $building)])
+            @include('admin._media', ['media' => $building->media, 'mediable' => $building, 'managePermission' => 'manage buildings', 'uploadRoute' => route('buildings.media.store', $building)])
 
-            @include('admin._notes', ['notes' => $building->notes, 'managePermission' => 'manage buildings', 'storeRoute' => route('admin.buildings.notes.store', $building)])
+            @include('admin._notes', ['notes' => $building->notes, 'managePermission' => 'manage notes', 'storeRoute' => route('buildings.notes.store', $building)])
 
             @can('manage buildings')
-                <form class="danger-zone" method="POST" action="{{ route('admin.buildings.destroy', $building) }}" onsubmit="return confirm('Supprimer cet immeuble ?')">
+                <form class="danger-zone" method="POST" action="{{ route('buildings.destroy', $building) }}" onsubmit="return confirm('Supprimer cet immeuble ?')">
                     @csrf @method('DELETE')
                     <div><strong>Supprimer l’immeuble</strong><p>Cette action est possible uniquement lorsqu’aucun bien n’est rattaché.</p></div>
                     <button class="button danger" type="submit">Supprimer</button>

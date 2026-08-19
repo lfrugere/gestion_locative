@@ -29,7 +29,7 @@
                     @if ($canModifyNote)
                         <div class="attachment-actions">
                             <button class="text-action" type="button" data-note-dialog-open="note-edit-dialog-{{ $note->id }}">Modifier</button>
-                            <form method="POST" action="{{ route('admin.notes.destroy', $note) }}" onsubmit="return confirm('Supprimer cette note ?')">
+                            <form method="POST" action="{{ route('notes.destroy', $note) }}" onsubmit="return confirm('Supprimer cette note ?')">
                                 @csrf
                                 @method('DELETE')
                                 <button class="text-action danger-text-action" type="submit">Supprimer</button>
@@ -44,7 +44,7 @@
                         <div class="modal-content">
                             <p class="panel-kicker">Note</p>
                             <h2 id="note-edit-title-{{ $note->id }}">Modifier la note</h2>
-                            <form method="POST" action="{{ route('admin.notes.update', $note) }}" class="modal-form">
+                            <form method="POST" action="{{ route('notes.update', $note) }}" class="modal-form">
                                 @csrf
                                 @method('PUT')
                                 <div class="form-field"><label for="note_body_{{ $note->id }}">Contenu</label><textarea id="note_body_{{ $note->id }}" name="body" required>{{ $note->body }}</textarea></div>

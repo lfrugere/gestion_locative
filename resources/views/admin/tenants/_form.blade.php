@@ -11,5 +11,5 @@
         <div class="form-field"><label for="first_name">Prénom</label><input id="first_name" name="first_name" value="{{ old('first_name', $tenant->first_name ?? '') }}" required></div>
         <div class="form-field"><label for="birth_date">Date de naissance <span class="field-optional">(facultatif)</span></label><input id="birth_date" type="date" name="birth_date" value="{{ old('birth_date', $tenant?->birth_date?->format('Y-m-d')) }}" max="{{ now()->subDay()->format('Y-m-d') }}"></div>
     </div>
-    <div class="form-actions"><a class="button secondary" href="{{ route('admin.tenants.index') }}">Annuler</a><button class="button" type="submit">{{ $submitLabel }}</button></div>
+    <div class="form-actions"><a class="button secondary" href="{{ route('tenants.index') }}">Annuler</a><button class="button" type="submit">{{ $submitLabel }}</button></div>
 </form>

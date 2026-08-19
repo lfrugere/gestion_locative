@@ -5,10 +5,10 @@
 @section('content')
     <div class="admin-header">
         <div><p class="muted">Gestion locative</p><h1>Locataires</h1></div>
-        @can('manage tenants')<a class="button" href="{{ route('admin.tenants.create') }}">Ajouter un locataire</a>@endcan
+        @can('manage tenants')<a class="button" href="{{ route('tenants.create') }}">Ajouter un locataire</a>@endcan
     </div>
 
-    <form class="list-filter" method="GET" action="{{ route('admin.tenants.index') }}">
+    <form class="list-filter" method="GET" action="{{ route('tenants.index') }}">
         <label for="status-filter">Afficher les dossiers</label>
         <select id="status-filter" name="status" onchange="this.form.submit()">
             @foreach (\App\Models\Tenant::STATUS_LABELS as $value => $label)
@@ -28,15 +28,15 @@
                     @foreach ($tenants as $tenant)
                         @php($primaryPhoto = $tenant->media->first())
                         <tr>
-                            <td>@if($primaryPhoto)<img class="list-thumb" src="{{ route('admin.media.download', $primaryPhoto) }}" alt="">@endif</td>
-                            <td><a href="{{ route('admin.tenants.show', $tenant) }}"><strong>{{ $tenant->fullName() }}</strong></a></td>
+                            <td>@if($primaryPhoto)<img class="list-thumb" src="{{ route('media.download', $primaryPhoto) }}" alt="">@endif</td>
+                            <td><a href="{{ route('tenants.show', $tenant) }}"><strong>{{ $tenant->fullName() }}</strong></a></td>
                             <td>{{ $tenant->civilityLabel() }}</td>
                             <td>{{ $tenant->birth_date?->format('d/m/Y') ?? '—' }}</td>
                             <td><span class="status-pill status-{{ $tenant->status }}">{{ $tenant->statusLabel() }}</span></td>
                             <td class="actions">
                                 @can('manage tenants')
-                                    <a class="icon-action" href="{{ route('admin.tenants.edit', $tenant) }}" aria-label="Modifier {{ $tenant->fullName() }}" data-tooltip="Modifier" title="Modifier"><span aria-hidden="true">✎</span></a>
-                                    <form method="POST" action="{{ route('admin.tenants.destroy', $tenant) }}" onsubmit="return confirm('Supprimer ce locataire ?')">@csrf @method('DELETE')<button class="icon-action danger-action" type="submit" aria-label="Supprimer {{ $tenant->fullName() }}" data-tooltip="Supprimer" title="Supprimer"><span aria-hidden="true">×</span></button></form>
+                                    <a class="icon-action" href="{{ route('tenants.edit', $tenant) }}" aria-label="Modifier {{ $tenant->fullName() }}" data-tooltip="Modifier" title="Modifier"><span aria-hidden="true">✎</span></a>
+                                    <form method="POST" action="{{ route('tenants.destroy', $tenant) }}" onsubmit="return confirm('Supprimer ce locataire ?')">@csrf @method('DELETE')<button class="icon-action danger-action" type="submit" aria-label="Supprimer {{ $tenant->fullName() }}" data-tooltip="Supprimer" title="Supprimer"><span aria-hidden="true">×</span></button></form>
                                 @endcan
                             </td>
                         </tr>

@@ -15,24 +15,24 @@ class NoteController extends Controller
 {
     public function storeBuilding(Request $request, Building $building): RedirectResponse
     {
-        return $this->store($request, $building, 'admin.buildings.show');
+        return $this->store($request, $building, 'buildings.show');
     }
 
     public function storeProperty(Request $request, Property $property): RedirectResponse
     {
-        return $this->store($request, $property, 'admin.properties.show');
+        return $this->store($request, $property, 'properties.show');
     }
 
     public function storePropertyRoom(Request $request, Property $property, PropertyRoom $room): RedirectResponse
     {
         abort_unless($room->property_id === $property->id, 404);
 
-        return $this->store($request, $room, 'admin.property-rooms.show', [$property, $room]);
+        return $this->store($request, $room, 'property-rooms.show', [$property, $room]);
     }
 
     public function storeTenant(Request $request, Tenant $tenant): RedirectResponse
     {
-        return $this->store($request, $tenant, 'admin.tenants.show');
+        return $this->store($request, $tenant, 'tenants.show');
     }
 
     public function update(Request $request, Note $note): RedirectResponse
@@ -78,15 +78,7 @@ class NoteController extends Controller
     {
         $user = auth()->user();
 
-        $hasParentPermission = match ($note->notable_type) {
-            Building::class => $user->can('manage buildings'),
-            Property::class => $user->can('manage properties'),
-            PropertyRoom::class => $user->can('manage properties'),
-            Tenant::class => $user->can('manage tenants'),
-            default => false,
-        };
-
-        if (! $hasParentPermission) {
+        if (! $user->can('manage notes')) {
             return false;
         }
 

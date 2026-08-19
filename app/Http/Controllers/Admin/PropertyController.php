@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Address;
 use App\Models\Building;
 use App\Models\Property;
+use App\Models\User;
 use App\Services\AddressGeocoder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,7 +42,9 @@ class PropertyController extends Controller
                 'rooms.media',
                 'notes.author',
                 'notes.editor',
+                'managers',
             ]),
+            'managers' => User::role('gestionnaire')->orderBy('name')->get(),
         ]);
     }
 
@@ -63,6 +66,18 @@ class PropertyController extends Controller
         return $this->save($request, $property, $geocoder);
     }
 
+    public function updateManagers(Request $request, Property $property): RedirectResponse
+    {
+        $validated = $request->validate([
+            'managers' => ['sometimes', 'array'],
+            'managers.*' => ['integer', Rule::exists('users', 'id')],
+        ]);
+
+        $property->managers()->sync($validated['managers'] ?? []);
+
+        return back()->with('success', 'Les gestionnaires du bien ont été mis à jour.');
+    }
+
     public function destroy(Property $property): RedirectResponse
     {
         DB::transaction(function () use ($property): void {
@@ -71,7 +86,7 @@ class PropertyController extends Controller
             $address?->delete();
         });
 
-        return to_route('admin.properties.index')
+        return to_route('properties.index')
             ->with('success', 'Le bien a été supprimé.');
     }
 
@@ -155,7 +170,7 @@ class PropertyController extends Controller
             $geocoder->geocode(Address::findOrFail($addressId));
         }
 
-        return to_route('admin.properties.index')->with(
+        return to_route('properties.index')->with(
             'success',
             $property ? 'Le bien a été modifié.' : 'Le bien a été créé.',
         );

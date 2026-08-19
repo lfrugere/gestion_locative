@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             'manage properties',
             'view tenants',
             'manage tenants',
+            'manage notes',
             'manage system',
         ];
 
@@ -48,10 +49,13 @@ class DatabaseSeeder extends Seeder
             'view buildings',
             'view properties',
             'view tenants',
-            'manage tenants',
+            'manage notes',
         ]);
 
-        Role::findOrCreate('locataire', 'web');
+        $tenantRole = Role::findOrCreate('locataire', 'web');
+        $tenantRole->syncPermissions([
+            'access admin',
+        ]);
 
         $permissionRegistrar->forgetCachedPermissions();
 

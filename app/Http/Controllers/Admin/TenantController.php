@@ -63,7 +63,7 @@ class TenantController extends Controller
 
         $tenant->delete();
 
-        return to_route('admin.tenants.index')->with('success', 'Le locataire a été supprimé.');
+        return to_route('tenants.index')->with('success', 'Le locataire a été supprimé.');
     }
 
     private function save(Request $request, ?Tenant $tenant = null): RedirectResponse
@@ -88,7 +88,7 @@ class TenantController extends Controller
             $tenant = Tenant::create($validated);
         }
 
-        return to_route('admin.tenants.index', ['status' => $tenant->status])->with(
+        return to_route('tenants.index', ['status' => $tenant->status])->with(
             'success',
             $isNew ? 'Le locataire a été créé.' : 'Le locataire a été modifié.',
         );

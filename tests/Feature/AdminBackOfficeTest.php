@@ -30,14 +30,14 @@ class AdminBackOfficeTest extends TestCase
 
     public function test_guest_cannot_access_the_admin_area(): void
     {
-        $this->get('/admin')
+        $this->get('/admin-locative')
             ->assertRedirect('/login');
     }
 
     public function test_authenticated_user_without_admin_permission_is_forbidden(): void
     {
         $this->actingAs(User::factory()->create())
-            ->get('/admin')
+            ->get('/admin-locative')
             ->assertForbidden();
     }
 
@@ -47,7 +47,7 @@ class AdminBackOfficeTest extends TestCase
         $this->assertTrue($admin->can('access admin'));
 
         $this->actingAs($admin)
-            ->get('/admin')
+            ->get('/admin-locative')
             ->assertOk()
             ->assertSee('Vue d’ensemble');
     }
@@ -55,7 +55,7 @@ class AdminBackOfficeTest extends TestCase
     public function test_admin_can_access_the_system_configuration_checklist(): void
     {
         $this->actingAs($this->admin())
-            ->get(route('admin.system-checks.index'))
+            ->get(route('system-checks.index'))
             ->assertOk()
             ->assertSee('Configuration du serveur')
             ->assertSee('Stockage privé des pièces jointes')
@@ -65,7 +65,7 @@ class AdminBackOfficeTest extends TestCase
         $manager->assignRole('gestionnaire');
 
         $this->actingAs($manager)
-            ->get(route('admin.system-checks.index'))
+            ->get(route('system-checks.index'))
             ->assertForbidden();
     }
 
@@ -87,7 +87,7 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($this->admin())
-            ->get('/admin')
+            ->get('/admin-locative')
             ->assertOk()
             ->assertSee('Points d’attention')
             ->assertSee('Immeubles récents')
@@ -96,15 +96,15 @@ class AdminBackOfficeTest extends TestCase
             ->assertSee($building->name)
             ->assertSee($property->name)
             ->assertSee($tenant->fullName())
-            ->assertSee(route('admin.buildings.create'))
-            ->assertSee(route('admin.properties.create'))
-            ->assertSee(route('admin.tenants.create'));
+            ->assertSee(route('buildings.create'))
+            ->assertSee(route('properties.create'))
+            ->assertSee(route('tenants.create'));
     }
 
     public function test_admin_can_create_a_building(): void
     {
         $this->actingAs($this->admin())
-            ->post('/admin/buildings', [
+            ->post('/buildings', [
                 'reference' => 'IMMEUBLE-01',
                 'name' => 'Résidence des Tilleuls',
                 'address' => [
@@ -114,7 +114,7 @@ class AdminBackOfficeTest extends TestCase
                     'country' => 'FR',
                 ],
             ])
-            ->assertRedirect('/admin/buildings');
+            ->assertRedirect('/buildings');
 
         $this->assertDatabaseHas('buildings', [
             'reference' => 'IMMEUBLE-01',
@@ -129,7 +129,7 @@ class AdminBackOfficeTest extends TestCase
     public function test_admin_can_create_a_house_with_its_own_address(): void
     {
         $this->actingAs($this->admin())
-            ->post('/admin/properties', [
+            ->post('/properties', [
                 'reference' => 'MAISON-01',
                 'name' => 'Maison de campagne',
                 'type' => 'house',
@@ -142,7 +142,7 @@ class AdminBackOfficeTest extends TestCase
                     'country' => 'FR',
                 ],
             ])
-            ->assertRedirect('/admin/properties');
+            ->assertRedirect('/properties');
 
         $this->assertDatabaseHas('properties', [
             'reference' => 'MAISON-01',
@@ -157,7 +157,7 @@ class AdminBackOfficeTest extends TestCase
         $building = $this->createBuilding();
 
         $this->actingAs($this->admin())
-            ->post('/admin/properties', [
+            ->post('/properties', [
                 'reference' => 'COLOC-APP-01',
                 'name' => 'Appartement en colocation',
                 'type' => Property::TYPE_APARTMENT,
@@ -165,7 +165,7 @@ class AdminBackOfficeTest extends TestCase
                 'is_shared_accommodation' => '1',
                 'status' => 'active',
             ])
-            ->assertRedirect('/admin/properties');
+            ->assertRedirect('/properties');
 
         $this->assertDatabaseHas('properties', [
             'reference' => 'COLOC-APP-01',
@@ -180,7 +180,7 @@ class AdminBackOfficeTest extends TestCase
         $building = $this->createBuilding();
 
         $this->actingAs($this->admin())
-            ->post('/admin/properties', [
+            ->post('/properties', [
                 'reference' => 'COLOC-PARKING-01',
                 'name' => 'Parking impossible en colocation',
                 'type' => Property::TYPE_PARKING,
@@ -198,7 +198,7 @@ class AdminBackOfficeTest extends TestCase
     public function test_apartment_requires_a_building(): void
     {
         $this->actingAs($this->admin())
-            ->post('/admin/properties', [
+            ->post('/properties', [
                 'reference' => 'APPART-01',
                 'name' => 'Appartement sans immeuble',
                 'type' => 'apartment',
@@ -220,19 +220,19 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get(route('admin.properties.show', $property))
+            ->get(route('properties.show', $property))
             ->assertOk()
             ->assertSee($property->reference);
 
         $this->actingAs($admin)
-            ->put(route('admin.properties.update', $property), [
+            ->put(route('properties.update', $property), [
                 'reference' => 'APPART-MODIFIE',
                 'name' => 'Appartement modifie',
                 'type' => Property::TYPE_APARTMENT,
                 'building_id' => $building->id,
                 'status' => 'inactive',
             ])
-            ->assertRedirect('/admin/properties');
+            ->assertRedirect('/properties');
 
         $this->assertDatabaseHas('properties', [
             'id' => $property->id,
@@ -241,8 +241,8 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->delete(route('admin.properties.destroy', $property))
-            ->assertRedirect('/admin/properties');
+            ->delete(route('properties.destroy', $property))
+            ->assertRedirect('/properties');
 
         $this->assertDatabaseMissing('properties', ['id' => $property->id]);
     }
@@ -260,8 +260,8 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->delete(route('admin.buildings.destroy', $building))
-            ->assertRedirect('/admin/buildings')
+            ->delete(route('buildings.destroy', $building))
+            ->assertRedirect('/buildings')
             ->assertSessionHas('error');
 
         $this->assertDatabaseHas('buildings', ['id' => $building->id]);
@@ -270,7 +270,7 @@ class AdminBackOfficeTest extends TestCase
     public function test_property_form_contains_dynamic_address_and_building_sections(): void
     {
         $response = $this->actingAs($this->admin())
-            ->get(route('admin.properties.create'));
+            ->get(route('properties.create'));
 
         $response->assertOk()
             ->assertSee('id="building-fields"', false)
@@ -298,14 +298,14 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->put(route('admin.properties.update', $property), [
+            ->put(route('properties.update', $property), [
                 'reference' => $property->reference,
                 'name' => $property->name,
                 'type' => Property::TYPE_APARTMENT,
                 'building_id' => $building->id,
                 'status' => 'active',
             ])
-            ->assertRedirect('/admin/properties');
+            ->assertRedirect('/properties');
 
         $this->assertDatabaseHas('properties', [
             'id' => $property->id,
@@ -330,12 +330,12 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->post(route('admin.property-rooms.store', $property), [
+            ->post(route('property-rooms.store', $property), [
                 'name' => 'Chambre bleue',                'surface_m2' => 12.5,
                 'status' => 'active',
                 'notes' => 'Cote cour',
             ])
-            ->assertRedirect(route('admin.properties.show', $property));
+            ->assertRedirect(route('properties.show', $property));
 
         $room = PropertyRoom::firstOrFail();
         $this->assertDatabaseHas('property_rooms', [
@@ -344,16 +344,16 @@ class AdminBackOfficeTest extends TestCase
             'name' => 'Chambre bleue',        ]);
 
         $this->actingAs($admin)
-            ->get(route('admin.property-rooms.show', [$property, $room]))
+            ->get(route('property-rooms.show', [$property, $room]))
             ->assertOk()
             ->assertSee('Chambre bleue');
 
         $this->actingAs($admin)
-            ->put(route('admin.property-rooms.update', [$property, $room]), [
+            ->put(route('property-rooms.update', [$property, $room]), [
                 'name' => 'Chambre verte',                'surface_m2' => 13,
                 'status' => 'inactive',
             ])
-            ->assertRedirect(route('admin.property-rooms.show', [$property, $room]));
+            ->assertRedirect(route('property-rooms.show', [$property, $room]));
 
         $this->assertDatabaseHas('property_rooms', [
             'id' => $room->id,
@@ -362,8 +362,8 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->delete(route('admin.property-rooms.destroy', [$property, $room]))
-            ->assertRedirect(route('admin.properties.show', $property));
+            ->delete(route('property-rooms.destroy', [$property, $room]))
+            ->assertRedirect(route('properties.show', $property));
 
         $this->assertDatabaseMissing('property_rooms', ['id' => $room->id]);
     }
@@ -381,7 +381,7 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($this->admin())
-            ->post(route('admin.property-rooms.store', $property), [
+            ->post(route('property-rooms.store', $property), [
                 'name' => 'Chambre refusee',                'status' => 'active',
             ])
             ->assertNotFound();
@@ -407,7 +407,7 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($this->admin())
-            ->put(route('admin.properties.update', $property), [
+            ->put(route('properties.update', $property), [
                 'reference' => $property->reference,
                 'name' => $property->name,
                 'type' => Property::TYPE_APARTMENT,
@@ -436,11 +436,11 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($this->admin())
-            ->post(route('admin.property-rooms.media.store', [$property, $room]), [
+            ->post(route('property-rooms.media.store', [$property, $room]), [
                 'kind' => Media::KIND_PHOTO,
                 'file' => UploadedFile::fake()->create('chambre.jpg', 100, 'image/jpeg'),
             ])
-            ->assertRedirect(route('admin.property-rooms.show', [$property, $room]));
+            ->assertRedirect(route('property-rooms.show', [$property, $room]));
 
         $this->assertDatabaseHas('media', [
             'mediable_type' => PropertyRoom::class,
@@ -461,34 +461,34 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->post(route('admin.properties.media.store', $property), [
+            ->post(route('properties.media.store', $property), [
                 'kind' => Media::KIND_PHOTO,
                 'file' => UploadedFile::fake()->create('facade.jpg', 100, 'image/jpeg'),
             ])
-            ->assertRedirect(route('admin.properties.show', $property));
+            ->assertRedirect(route('properties.show', $property));
 
         $photo = Media::firstOrFail();
         $this->assertTrue($photo->is_primary);
 
         $this->actingAs($admin)
-            ->post(route('admin.properties.media.store', $property), [
+            ->post(route('properties.media.store', $property), [
                 'kind' => Media::KIND_PHOTO,
                 'file' => UploadedFile::fake()->create('salon.jpg', 100, 'image/jpeg'),
             ])
-            ->assertRedirect(route('admin.properties.show', $property));
+            ->assertRedirect(route('properties.show', $property));
 
         $secondPhoto = Media::where('kind', Media::KIND_PHOTO)->where('id', '!=', $photo->id)->firstOrFail();
         $this->assertSame(1, Media::where('kind', Media::KIND_PHOTO)->where('is_primary', true)->count());
 
         $this->actingAs($admin)
-            ->post(route('admin.properties.media.store', $property), [
+            ->post(route('properties.media.store', $property), [
                 'kind' => Media::KIND_DOCUMENT,
                 'type' => Media::TYPE_DIAGNOSTICS,
                 'file' => UploadedFile::fake()->create('diagnostic.pdf', 100, 'application/pdf'),
                 'display_name' => 'Diagnostic énergétique',
                 'tags' => 'diagnostic, énergie',
             ])
-            ->assertRedirect(route('admin.properties.show', $property));
+            ->assertRedirect(route('properties.show', $property));
 
         $document = Media::where('kind', Media::KIND_DOCUMENT)->firstOrFail();
         $this->assertSame(Media::TYPE_DIAGNOSTICS, $document->type);
@@ -498,11 +498,11 @@ class AdminBackOfficeTest extends TestCase
         $this->assertDatabaseHas('tags', ['name' => 'énergie']);
 
         $this->actingAs($admin)
-            ->get(route('admin.media.download', $document))
+            ->get(route('media.download', $document))
             ->assertOk();
 
         $this->actingAs($admin)
-            ->delete(route('admin.media.destroy', $photo))
+            ->delete(route('media.destroy', $photo))
             ->assertRedirect();
 
         $this->assertDatabaseMissing('media', ['id' => $photo->id]);
@@ -520,7 +520,7 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->post(route('admin.properties.media.store', $property), [
+            ->post(route('properties.media.store', $property), [
                 'kind' => Media::KIND_DOCUMENT,
                 'file' => UploadedFile::fake()->create('diagnostic.pdf', 20481, 'application/pdf'),
             ])
@@ -534,28 +534,28 @@ class AdminBackOfficeTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)
-            ->post(route('admin.tenants.store'), [
+            ->post(route('tenants.store'), [
                 'civility' => Tenant::CIVILITY_MRS,
                 'last_name' => 'Durand',
                 'first_name' => 'Jeanne',
                 'birth_date' => '1985-02-14',
                 'status' => Tenant::STATUS_CANDIDATE,
             ])
-            ->assertRedirect(route('admin.tenants.index', ['status' => Tenant::STATUS_CANDIDATE]));
+            ->assertRedirect(route('tenants.index', ['status' => Tenant::STATUS_CANDIDATE]));
 
         $tenant = Tenant::firstOrFail();
         $this->assertSame('Jeanne Durand', $tenant->fullName());
         $this->assertSame(Tenant::STATUS_CANDIDATE, $tenant->status);
 
         $this->actingAs($admin)
-            ->put(route('admin.tenants.update', $tenant), [
+            ->put(route('tenants.update', $tenant), [
                 'civility' => Tenant::CIVILITY_MRS,
                 'last_name' => 'Durand',
                 'first_name' => 'Jeanne',
                 'birth_date' => '1985-02-14',
                 'status' => Tenant::STATUS_ACTIVE,
             ])
-            ->assertRedirect(route('admin.tenants.index', ['status' => Tenant::STATUS_ACTIVE]));
+            ->assertRedirect(route('tenants.index', ['status' => Tenant::STATUS_ACTIVE]));
 
         $this->assertDatabaseHas('tenants', [
             'id' => $tenant->id,
@@ -563,8 +563,8 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->delete(route('admin.tenants.destroy', $tenant))
-            ->assertRedirect(route('admin.tenants.index'));
+            ->delete(route('tenants.destroy', $tenant))
+            ->assertRedirect(route('tenants.index'));
 
         $this->assertDatabaseMissing('tenants', ['id' => $tenant->id]);
     }
@@ -591,19 +591,19 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($this->admin())
-            ->get(route('admin.tenants.index'))
+            ->get(route('tenants.index'))
             ->assertOk()
             ->assertSee($activeTenant->fullName())
             ->assertDontSee($candidateTenant->fullName());
 
         $this->actingAs($this->admin())
-            ->get(route('admin.tenants.index', ['status' => Tenant::STATUS_CANDIDATE]))
+            ->get(route('tenants.index', ['status' => Tenant::STATUS_CANDIDATE]))
             ->assertOk()
             ->assertSee($candidateTenant->fullName())
             ->assertDontSee($activeTenant->fullName());
     }
 
-    public function test_admin_can_manage_tenant_media_and_manager_can_manage_tenants(): void
+    public function test_admin_can_manage_tenant_media_and_manager_has_read_only_access(): void
     {
         $tenant = Tenant::create([
             'civility' => Tenant::CIVILITY_MR,
@@ -614,17 +614,17 @@ class AdminBackOfficeTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)
-            ->post(route('admin.tenants.media.store', $tenant), [
+            ->post(route('tenants.media.store', $tenant), [
                 'kind' => Media::KIND_PHOTO,
                 'file' => UploadedFile::fake()->create('portrait.jpg', 100, 'image/jpeg'),
             ])
-            ->assertRedirect(route('admin.tenants.show', $tenant));
+            ->assertRedirect(route('tenants.show', $tenant));
 
         $photo = Media::firstOrFail();
         $this->assertTrue($photo->is_primary);
 
         $this->actingAs($admin)
-            ->post(route('admin.tenants.media.store', $tenant), [
+            ->post(route('tenants.media.store', $tenant), [
                 'kind' => Media::KIND_PHOTO,
                 'file' => UploadedFile::fake()->create('second-portrait.jpg', 100, 'image/jpeg'),
             ])
@@ -635,20 +635,20 @@ class AdminBackOfficeTest extends TestCase
         $this->assertSame(1, $tenant->media()->where('kind', Media::KIND_PHOTO)->count());
 
         $this->actingAs($admin)
-            ->get(route('admin.tenants.show', $tenant))
+            ->get(route('tenants.show', $tenant))
             ->assertOk()
             ->assertSee('detail-hero-photo', false)
             ->assertSee('Photo d’identité');
 
         $this->actingAs($admin)
-            ->post(route('admin.tenants.media.store', $tenant), [
+            ->post(route('tenants.media.store', $tenant), [
                 'kind' => Media::KIND_DOCUMENT,
                 'type' => Media::TYPE_IDENTITY,
                 'file' => UploadedFile::fake()->create('dossier.pdf', 100, 'application/pdf'),
                 'display_name' => 'Dossier de candidature',
                 'tags' => 'candidature, identité',
             ])
-            ->assertRedirect(route('admin.tenants.show', $tenant));
+            ->assertRedirect(route('tenants.show', $tenant));
 
         $this->assertDatabaseHas('media', [
             'mediable_type' => Tenant::class,
@@ -662,21 +662,21 @@ class AdminBackOfficeTest extends TestCase
         $manager->assignRole('gestionnaire');
 
         $this->actingAs($manager)
-            ->get(route('admin.tenants.show', $tenant))
+            ->get(route('tenants.show', $tenant))
             ->assertOk();
 
         $this->actingAs($manager)
-            ->get(route('admin.tenants.create'))
-            ->assertOk();
+            ->get(route('tenants.create'))
+            ->assertForbidden();
 
         $this->actingAs($manager)
-            ->post(route('admin.tenants.store'), [
+            ->post(route('tenants.store'), [
                 'civility' => Tenant::CIVILITY_MRS,
                 'last_name' => 'Gestionnaire',
                 'first_name' => 'Sophie',
                 'status' => Tenant::STATUS_CANDIDATE,
             ])
-            ->assertRedirect(route('admin.tenants.index', ['status' => Tenant::STATUS_CANDIDATE]));
+            ->assertForbidden();
     }
 
     public function test_admin_can_add_edit_and_delete_a_note_on_a_building(): void
@@ -685,10 +685,10 @@ class AdminBackOfficeTest extends TestCase
         $building = $this->createBuilding();
 
         $this->actingAs($admin)
-            ->post(route('admin.buildings.notes.store', $building), [
+            ->post(route('buildings.notes.store', $building), [
                 'body' => 'Interphone à changer',
             ])
-            ->assertRedirect(route('admin.buildings.show', $building));
+            ->assertRedirect(route('buildings.show', $building));
 
         $note = Note::firstOrFail();
         $this->assertSame(Building::class, $note->notable_type);
@@ -698,13 +698,13 @@ class AdminBackOfficeTest extends TestCase
         $this->assertFalse($note->wasEdited());
 
         $this->actingAs($admin)
-            ->get(route('admin.buildings.show', $building))
+            ->get(route('buildings.show', $building))
             ->assertOk()
             ->assertSee('Interphone à changer')
             ->assertSee($admin->name);
 
         $this->actingAs($admin)
-            ->put(route('admin.notes.update', $note), [
+            ->put(route('notes.update', $note), [
                 'body' => 'Interphone changé',
             ])
             ->assertRedirect();
@@ -715,13 +715,13 @@ class AdminBackOfficeTest extends TestCase
         $this->assertTrue($note->wasEdited());
 
         $this->actingAs($admin)
-            ->delete(route('admin.notes.destroy', $note))
+            ->delete(route('notes.destroy', $note))
             ->assertRedirect();
 
         $this->assertDatabaseMissing('notes', ['id' => $note->id]);
     }
 
-    public function test_note_add_permission_matches_manage_permission_on_the_parent(): void
+    public function test_manager_can_add_notes_on_any_entity_but_not_a_locataire(): void
     {
         $manager = User::factory()->create();
         $manager->assignRole('gestionnaire');
@@ -729,10 +729,10 @@ class AdminBackOfficeTest extends TestCase
         $building = $this->createBuilding();
 
         $this->actingAs($manager)
-            ->post(route('admin.buildings.notes.store', $building), ['body' => 'Non autorisé'])
-            ->assertForbidden();
+            ->post(route('buildings.notes.store', $building), ['body' => 'Autorisé'])
+            ->assertRedirect(route('buildings.show', $building));
 
-        $this->assertDatabaseCount('notes', 0);
+        $this->assertDatabaseCount('notes', 1);
 
         $tenant = Tenant::create([
             'civility' => Tenant::CIVILITY_MR,
@@ -742,10 +742,19 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($manager)
-            ->post(route('admin.tenants.notes.store', $tenant), ['body' => 'Autorisé'])
-            ->assertRedirect(route('admin.tenants.show', $tenant));
+            ->post(route('tenants.notes.store', $tenant), ['body' => 'Autorisé aussi'])
+            ->assertRedirect(route('tenants.show', $tenant));
 
-        $this->assertDatabaseCount('notes', 1);
+        $this->assertDatabaseCount('notes', 2);
+
+        $locataire = User::factory()->create();
+        $locataire->assignRole('locataire');
+
+        $this->actingAs($locataire)
+            ->post(route('buildings.notes.store', $building), ['body' => 'Non autorisé'])
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('notes', 2);
     }
 
     public function test_only_the_author_or_admin_can_edit_or_delete_a_note(): void
@@ -764,28 +773,28 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($author)
-            ->post(route('admin.tenants.notes.store', $tenant), ['body' => 'Note initiale'])
+            ->post(route('tenants.notes.store', $tenant), ['body' => 'Note initiale'])
             ->assertRedirect();
 
         $note = Note::firstOrFail();
 
         $this->actingAs($colleague)
-            ->put(route('admin.notes.update', $note), ['body' => 'Tentative non autorisée'])
+            ->put(route('notes.update', $note), ['body' => 'Tentative non autorisée'])
             ->assertForbidden();
 
         $this->actingAs($colleague)
-            ->delete(route('admin.notes.destroy', $note))
+            ->delete(route('notes.destroy', $note))
             ->assertForbidden();
 
         $this->actingAs($author)
-            ->put(route('admin.notes.update', $note), ['body' => 'Modifiée par l’auteur'])
+            ->put(route('notes.update', $note), ['body' => 'Modifiée par l’auteur'])
             ->assertRedirect();
 
         $note->refresh();
         $this->assertSame('Modifiée par l’auteur', $note->body);
 
         $this->actingAs($admin)
-            ->delete(route('admin.notes.destroy', $note))
+            ->delete(route('notes.destroy', $note))
             ->assertRedirect();
 
         $this->assertDatabaseMissing('notes', ['id' => $note->id]);
@@ -809,12 +818,12 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->post(route('admin.properties.notes.store', $property), ['body' => 'Note bien'])
-            ->assertRedirect(route('admin.properties.show', $property));
+            ->post(route('properties.notes.store', $property), ['body' => 'Note bien'])
+            ->assertRedirect(route('properties.show', $property));
 
         $this->actingAs($admin)
-            ->post(route('admin.property-rooms.notes.store', [$property, $room]), ['body' => 'Note pièce'])
-            ->assertRedirect(route('admin.property-rooms.show', [$property, $room]));
+            ->post(route('property-rooms.notes.store', [$property, $room]), ['body' => 'Note pièce'])
+            ->assertRedirect(route('property-rooms.show', [$property, $room]));
 
         $this->assertDatabaseHas('notes', [
             'notable_type' => Property::class,
@@ -828,12 +837,12 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get(route('admin.properties.show', $property))
+            ->get(route('properties.show', $property))
             ->assertOk()
             ->assertSee('Note bien');
 
         $this->actingAs($admin)
-            ->get(route('admin.property-rooms.show', [$property, $room]))
+            ->get(route('property-rooms.show', [$property, $room]))
             ->assertOk()
             ->assertSee('Note pièce');
     }
@@ -853,6 +862,98 @@ class AdminBackOfficeTest extends TestCase
 
         $this->assertTrue($tenant->user->is($user));
         $this->assertTrue($user->tenant->is($tenant));
+    }
+
+    public function test_admin_can_put_a_property_in_management_for_a_manager(): void
+    {
+        $admin = $this->admin();
+        $building = $this->createBuilding();
+        $property = Property::create([
+            'reference' => 'GESTION-01',
+            'name' => 'Bien en gestion',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'status' => 'active',
+        ]);
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+
+        $this->actingAs($admin)
+            ->put(route('properties.managers.update', $property), [
+                'managers' => [$manager->id],
+            ])
+            ->assertRedirect();
+
+        $this->assertTrue($property->managers()->whereKey($manager->id)->exists());
+        $this->assertTrue($manager->managedProperties()->whereKey($property->id)->exists());
+    }
+
+    public function test_manager_only_sees_properties_put_in_management_for_them(): void
+    {
+        $building = $this->createBuilding();
+        $ownProperty = Property::create([
+            'reference' => 'GESTION-02',
+            'name' => 'Bien géré',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'status' => 'active',
+        ]);
+        $otherProperty = Property::create([
+            'reference' => 'GESTION-03',
+            'name' => 'Bien non géré',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'status' => 'active',
+        ]);
+
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+        $ownProperty->managers()->attach($manager);
+
+        $this->actingAs($manager)
+            ->get(route('mes-biens'))
+            ->assertOk()
+            ->assertSee($ownProperty->name)
+            ->assertDontSee($otherProperty->name);
+
+        $this->actingAs($manager)
+            ->get(route('mes-biens.show', $ownProperty))
+            ->assertOk()
+            ->assertSee($ownProperty->name)
+            ->assertDontSee('Modifier')
+            ->assertDontSee('Mise en gestion');
+
+        $this->actingAs($manager)
+            ->get(route('mes-biens.show', $otherProperty))
+            ->assertForbidden();
+    }
+
+    public function test_locataire_can_only_reach_mes_contrats(): void
+    {
+        $locataire = User::factory()->create();
+        $locataire->assignRole('locataire');
+
+        $this->actingAs($locataire)
+            ->get(route('gestion-locative'))
+            ->assertOk()
+            ->assertDontSee('Mes biens')
+            ->assertDontSee('Mes locataires');
+
+        $this->actingAs($locataire)
+            ->get(route('mes-contrats'))
+            ->assertOk();
+
+        $this->actingAs($locataire)
+            ->get(route('mes-biens'))
+            ->assertForbidden();
+
+        $this->actingAs($locataire)
+            ->get(route('mes-locataires'))
+            ->assertForbidden();
+
+        $this->actingAs($locataire)
+            ->get(route('admin-locative'))
+            ->assertForbidden();
     }
 
     private function admin(): User

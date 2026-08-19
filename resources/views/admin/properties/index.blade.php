@@ -9,7 +9,7 @@
             <h1>Biens immobiliers</h1>
         </div>
         @can('manage properties')
-            <a class="button" href="{{ route('admin.properties.create') }}">Ajouter un bien</a>
+            <a class="button" href="{{ route('properties.create') }}">Ajouter un bien</a>
         @endcan
     </div>
 
@@ -24,10 +24,10 @@
                 <tbody>
                     @foreach ($properties as $property)
                         <tr>
-                            <td>@if($property->media->first())<img class="list-thumb" src="{{ route('admin.media.download', $property->media->first()) }}" alt="">@endif</td>
-                            <td><a href="{{ route('admin.properties.show', $property) }}"><strong>{{ $property->reference }}</strong></a></td>
+                            <td>@if($property->media->first())<img class="list-thumb" src="{{ route('media.download', $property->media->first()) }}" alt="">@endif</td>
+                            <td><a href="{{ route('properties.show', $property) }}"><strong>{{ $property->reference }}</strong></a></td>
                             <td>{{ $property->typeLabel() }}</td>
-                            <td><a href="{{ route('admin.properties.show', $property) }}">{{ $property->name }}</a></td>
+                            <td><a href="{{ route('properties.show', $property) }}">{{ $property->name }}</a></td>
                             <td>
                                 @if ($property->building)
                                     {{ $property->building->name }}
@@ -41,8 +41,8 @@
                             <td>{{ $property->status === 'active' ? 'Actif' : 'Inactif' }}</td>
                             <td class="actions">
                                 @can('manage properties')
-                                    <a class="icon-action" href="{{ route('admin.properties.edit', $property) }}" aria-label="Modifier {{ $property->name }}" data-tooltip="Modifier" title="Modifier"><span aria-hidden="true">✎</span></a>
-                                    <form method="POST" action="{{ route('admin.properties.destroy', $property) }}" onsubmit="return confirm('Supprimer ce bien ?')">
+                                    <a class="icon-action" href="{{ route('properties.edit', $property) }}" aria-label="Modifier {{ $property->name }}" data-tooltip="Modifier" title="Modifier"><span aria-hidden="true">✎</span></a>
+                                    <form method="POST" action="{{ route('properties.destroy', $property) }}" onsubmit="return confirm('Supprimer ce bien ?')">
                                         @csrf
                                         @method('DELETE')
                                         <button class="icon-action danger-action" type="submit" aria-label="Supprimer {{ $property->name }}" data-tooltip="Supprimer" title="Supprimer"><span aria-hidden="true">×</span></button>

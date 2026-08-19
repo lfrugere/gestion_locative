@@ -25,7 +25,7 @@
             @foreach ($documents as $document)
                 <article class="attachment-row">
                     <div class="attachment-info">
-                        <a href="{{ route('admin.media.download', $document) }}">{{ $document->display_name }}</a>
+                        <a href="{{ route('media.download', $document) }}">{{ $document->display_name }}</a>
                         <span>{{ $document->typeLabel() }} · {{ number_format($document->size / 1024, 0, ',', ' ') }} Ko</span>
                     </div>
                     @if ($document->tags->isNotEmpty())
@@ -34,7 +34,7 @@
                     @can($managePermission)
                         <div class="attachment-actions">
                             <button class="text-action" type="button" data-dialog-open="document-edit-dialog-{{ $document->id }}">Modifier</button>
-                            <form method="POST" action="{{ route('admin.media.destroy', $document) }}" onsubmit="return confirm('Supprimer cette pièce jointe ?')">
+                            <form method="POST" action="{{ route('media.destroy', $document) }}" onsubmit="return confirm('Supprimer cette pièce jointe ?')">
                                 @csrf
                                 @method('DELETE')
                                 <button class="text-action danger-text-action" type="submit">Supprimer</button>
@@ -49,7 +49,7 @@
                         <div class="modal-content">
                             <p class="panel-kicker">Pièce jointe</p>
                             <h2 id="document-edit-title-{{ $document->id }}">Modifier les informations</h2>
-                            <form method="POST" action="{{ route('admin.media.update', $document) }}" class="modal-form">
+                            <form method="POST" action="{{ route('media.update', $document) }}" class="modal-form">
                                 @csrf
                                 @method('PUT')
                                 <div class="form-field"><label for="type_{{ $document->id }}">Type de pièce jointe</label><select id="type_{{ $document->id }}" name="type" required>@foreach ($mediaTypes as $type)<option value="{{ $type }}" @selected($document->type === $type)>{{ \App\Models\Media::TYPE_LABELS[$type] }}</option>@endforeach</select></div>
@@ -69,8 +69,8 @@
         <div class="photo-grid">
             @foreach ($photos as $index => $photo)
                 <article class="photo-item @if($photo->is_primary) primary @endif">
-                    <button class="photo-preview" type="button" data-photo-index="{{ $index }}" data-photo-src="{{ route('admin.media.download', $photo) }}" data-photo-name="{{ $photo->display_name }}" aria-label="Afficher {{ $photo->display_name }} en grand">
-                        <img src="{{ route('admin.media.download', $photo) }}" alt="{{ $photo->display_name }}">
+                    <button class="photo-preview" type="button" data-photo-index="{{ $index }}" data-photo-src="{{ route('media.download', $photo) }}" data-photo-name="{{ $photo->display_name }}" aria-label="Afficher {{ $photo->display_name }} en grand">
+                        <img src="{{ route('media.download', $photo) }}" alt="{{ $photo->display_name }}">
                         <span class="photo-name">{{ $photo->display_name }}</span>
                     </button>
                     <div class="photo-item-content">
@@ -78,12 +78,12 @@
                         @can($managePermission)
                             <div class="actions photo-actions">
                                 @unless($singlePhoto || $photo->is_primary)
-                                    <form method="POST" action="{{ route('admin.media.primary', $photo) }}">
+                                    <form method="POST" action="{{ route('media.primary', $photo) }}">
                                         @csrf
                                         <button class="text-action" type="submit">Définir par défaut</button>
                                     </form>
                                 @endunless
-                                <form method="POST" action="{{ route('admin.media.destroy', $photo) }}" onsubmit="return confirm('Supprimer cette photo ?')">
+                                <form method="POST" action="{{ route('media.destroy', $photo) }}" onsubmit="return confirm('Supprimer cette photo ?')">
                                     @csrf
                                     @method('DELETE')
                                     <button class="text-action danger-text-action" type="submit">Supprimer</button>
