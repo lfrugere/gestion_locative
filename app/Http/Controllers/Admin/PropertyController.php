@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Address;
+use App\Models\BankAccount;
 use App\Models\Building;
 use App\Models\Property;
 use App\Models\User;
@@ -29,6 +30,7 @@ class PropertyController extends Controller
     {
         return view('admin.properties.create', [
             'buildings' => Building::orderBy('name')->get(),
+            'bankAccounts' => BankAccount::orderBy('label')->get(),
         ]);
     }
 
@@ -37,6 +39,7 @@ class PropertyController extends Controller
         return view('admin.properties.show', [
             'property' => $property->load([
                 'building.address',
+                'bankAccount',
                 'address',
                 'media.tags',
                 'rooms.media',
@@ -53,6 +56,7 @@ class PropertyController extends Controller
         return view('admin.properties.edit', [
             'property' => $property->load('address'),
             'buildings' => Building::orderBy('name')->get(),
+            'bankAccounts' => BankAccount::orderBy('label')->get(),
         ]);
     }
 
@@ -110,6 +114,7 @@ class PropertyController extends Controller
                 Rule::requiredIf($requiresBuilding),
                 Rule::prohibitedIf($type === Property::TYPE_HOUSE),
             ],
+            'bank_account_id' => ['nullable', 'integer', 'exists:bank_accounts,id'],
             'address.line1' => [Rule::requiredIf($type === Property::TYPE_HOUSE), 'nullable', 'string', 'max:255'],
             'address.line2' => ['nullable', 'string', 'max:255'],
             'address.postal_code' => [Rule::requiredIf($type === Property::TYPE_HOUSE), 'nullable', 'string', 'max:20'],
@@ -152,6 +157,7 @@ class PropertyController extends Controller
                 'name' => $validated['name'],
                 'type' => $validated['type'],
                 'building_id' => $validated['building_id'] ?? null,
+                'bank_account_id' => $validated['bank_account_id'] ?? null,
                 'address_id' => $addressId,
                 'floor' => $validated['floor'] ?? null,
                 'surface_m2' => $validated['surface_m2'] ?? null,

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
     'name',
     'type',
     'building_id',
+    'bank_account_id',
     'address_id',
     'floor',
     'surface_m2',
@@ -69,6 +70,11 @@ class Property extends Model
     public function building(): BelongsTo
     {
         return $this->belongsTo(Building::class);
+    }
+
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(BankAccount::class);
     }
 
     public function media(): MorphMany

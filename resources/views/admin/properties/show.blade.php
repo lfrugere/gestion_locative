@@ -51,6 +51,15 @@
 
             @can('manage properties')
                 <section class="detail-panel">
+                    <div class="panel-heading"><div><span class="panel-kicker">Rattachement</span><h2>Compte bancaire</h2></div><span class="panel-icon">🏦</span></div>
+                    @if ($property->bankAccount)
+                        <a class="related-entity" href="{{ route('bank-accounts.show', $property->bankAccount) }}"><span class="entity-mark">B</span><span><strong>{{ $property->bankAccount->label }}</strong></span><span class="row-arrow">→</span></a>
+                    @else
+                        <p class="empty compact">Aucun compte bancaire associé à ce bien.</p>
+                    @endif
+                </section>
+
+                <section class="detail-panel">
                     <div class="panel-heading"><div><span class="panel-kicker">Attribution</span><h2>Mise en gestion</h2></div><span class="panel-icon">👤</span></div>
                     @if ($managers->isEmpty())
                         <p class="empty compact">Aucun compte gestionnaire n’existe pour le moment.</p>
