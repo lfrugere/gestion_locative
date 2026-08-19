@@ -38,14 +38,14 @@
                     <div class="card table-wrap">
                         <table>
                             <thead>
-                                <tr><th>Date</th><th>Libellé</th><th>Montant</th>@can('manage bank accounts')<th>Actions</th>@endcan</tr>
+                                <tr><th>Date</th><th>Libellé</th><th style="text-align: right;">Montant</th>@can('manage bank accounts')<th>Actions</th>@endcan</tr>
                             </thead>
                             <tbody>
                                 @foreach ($bankAccount->transactions as $transaction)
                                     <tr>
                                         <td>{{ $transaction->date->format('d/m/Y') }}</td>
                                         <td>{{ $transaction->label }}</td>
-                                        <td>{{ number_format($transaction->amount, 2, ',', ' ') }} €</td>
+                                        <td style="text-align: right;">{{ number_format($transaction->amount, 2, ',', ' ') }} €</td>
                                         @can('manage bank accounts')
                                             <td class="actions">
                                                 <form method="POST" action="{{ route('bank-accounts.transactions.destroy', [$bankAccount, $transaction]) }}" onsubmit="return confirm('Supprimer cette écriture ?')">
