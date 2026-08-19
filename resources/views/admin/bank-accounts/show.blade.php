@@ -14,6 +14,11 @@
             <span class="status-pill status-active">Solde : {{ number_format($bankAccount->balance, 2, ',', ' ') }} €</span>
             @can('manage bank accounts')
                 <a class="button secondary" href="{{ route('bank-accounts.edit', $bankAccount) }}">Modifier</a>
+                @if ($openReconciliation)
+                    <a class="button" href="{{ route('bank-accounts.reconciliations.edit', [$bankAccount, $openReconciliation]) }}">Reprendre le rapprochement</a>
+                @else
+                    <a class="button" href="{{ route('bank-accounts.reconciliations.create', $bankAccount) }}">Nouveau rapprochement</a>
+                @endif
             @endcan
         </div>
     </section>
@@ -38,7 +43,7 @@
                     <div class="card table-wrap">
                         <table>
                             <thead>
-                                <tr><th>Date</th><th>Libellé</th><th style="text-align: right;">Montant</th>@can('manage bank accounts')<th>Actions</th>@endcan</tr>
+                                <tr><th>Date</th><th>Libellé</th><th style="text-align: right;">Montant</th><th>Rapprochement</th>@can('manage bank accounts')<th>Actions</th>@endcan</tr>
                             </thead>
                             <tbody>
                                 @foreach ($bankAccount->transactions as $transaction)
@@ -46,13 +51,22 @@
                                         <td>{{ $transaction->date->format('d/m/Y') }}</td>
                                         <td>{{ $transaction->label }}</td>
                                         <td style="text-align: right;">{{ number_format($transaction->amount, 2, ',', ' ') }} €</td>
+                                        <td>
+                                            @if ($transaction->isLocked())
+                                                <span class="status-pill status-active">Rapprochée</span>
+                                            @else
+                                                <span class="status-pill">Non rapprochée</span>
+                                            @endif
+                                        </td>
                                         @can('manage bank accounts')
                                             <td class="actions">
-                                                <form method="POST" action="{{ route('bank-accounts.transactions.destroy', [$bankAccount, $transaction]) }}" onsubmit="return confirm('Supprimer cette écriture ?')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button class="icon-action danger-action" type="submit" aria-label="Supprimer l’écriture" data-tooltip="Supprimer" title="Supprimer"><span aria-hidden="true">×</span></button>
-                                                </form>
+                                                @unless ($transaction->isLocked())
+                                                    <form method="POST" action="{{ route('bank-accounts.transactions.destroy', [$bankAccount, $transaction]) }}" onsubmit="return confirm('Supprimer cette écriture ?')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button class="icon-action danger-action" type="submit" aria-label="Supprimer l’écriture" data-tooltip="Supprimer" title="Supprimer"><span aria-hidden="true">×</span></button>
+                                                    </form>
+                                                @endunless
                                             </td>
                                         @endcan
                                     </tr>
@@ -73,6 +87,38 @@
                         <div class="form-actions"><button class="button" type="submit">Ajouter l’écriture</button></div>
                     </form>
                 @endcan
+            </section>
+
+            <section class="detail-panel associated-panel">
+                <div class="panel-heading"><div><span class="panel-kicker">Historique</span><h2>Rapprochements</h2></div><span class="count-badge">{{ $bankAccount->reconciliations->count() }}</span></div>
+
+                @if ($bankAccount->reconciliations->isEmpty())
+                    <p class="empty compact">Aucun rapprochement n’a encore été effectué.</p>
+                @else
+                    <div class="card table-wrap">
+                        <table>
+                            <thead>
+                                <tr><th>Date du relevé</th><th style="text-align: right;">Solde du relevé</th><th>Réalisé par</th><th>Statut</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($bankAccount->reconciliations as $reconciliation)
+                                    <tr>
+                                        <td>{{ $reconciliation->statement_date->format('d/m/Y') }}</td>
+                                        <td style="text-align: right;">{{ number_format($reconciliation->statement_balance, 2, ',', ' ') }} €</td>
+                                        <td>{{ $reconciliation->createdBy?->name ?? '—' }}</td>
+                                        <td>
+                                            @if ($reconciliation->isClosed())
+                                                <span class="status-pill status-active">Clôturé le {{ $reconciliation->closed_at->format('d/m/Y') }}</span>
+                                            @else
+                                                <a class="status-pill" href="{{ route('bank-accounts.reconciliations.edit', [$bankAccount, $reconciliation]) }}">En cours</a>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </section>
         </div>
     </div>

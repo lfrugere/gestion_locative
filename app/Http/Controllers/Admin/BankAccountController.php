@@ -43,7 +43,8 @@ class BankAccountController extends Controller
     public function show(BankAccount $bankAccount): View
     {
         return view('admin.bank-accounts.show', [
-            'bankAccount' => $bankAccount->load(['manager', 'transactions']),
+            'bankAccount' => $bankAccount->load(['manager', 'transactions.reconciliation', 'reconciliations.createdBy']),
+            'openReconciliation' => $bankAccount->reconciliations()->whereNull('closed_at')->first(),
         ]);
     }
 
