@@ -11,10 +11,10 @@
             <p class="detail-lead">Cochez les écritures qui figurent sur votre relevé bancaire, puis enregistrez. Clôturez une fois l’écart à zéro.</p>
         </div>
         <div class="detail-hero-actions">
-            <form method="POST" action="{{ route('bank-accounts.reconciliations.destroy', [$bankAccount, $reconciliation]) }}" onsubmit="return confirm('Abandonner ce rapprochement ?')">
+            <form method="POST" action="{{ route('bank-accounts.reconciliations.destroy', [$bankAccount, $reconciliation]) }}" onsubmit="return confirm('Supprimer ce rapprochement ?')">
                 @csrf
                 @method('DELETE')
-                <button class="button secondary" type="submit">Abandonner</button>
+                <button class="button secondary" type="submit">Supprimer</button>
             </form>
         </div>
     </section>

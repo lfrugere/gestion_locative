@@ -31,7 +31,7 @@ class BankReconciliationController extends Controller
     {
         if ($bankAccount->reconciliations()->whereNull('closed_at')->exists()) {
             return to_route('bank-accounts.show', $bankAccount)
-                ->with('error', 'Un rapprochement est déjà en cours pour ce compte. Clôturez-le ou abandonnez-le avant d’en démarrer un nouveau.');
+                ->with('error', 'Un rapprochement est déjà en cours pour ce compte. Clôturez-le ou supprimez-le avant d’en démarrer un nouveau.');
         }
 
         $lastClosed = $this->lastClosedReconciliation($bankAccount);
@@ -132,7 +132,7 @@ class BankReconciliationController extends Controller
         });
 
         return to_route('bank-accounts.show', $bankAccount)
-            ->with('success', 'Le rapprochement a été abandonné.');
+            ->with('success', 'Le rapprochement a été supprimé.');
     }
 
     private function authorizeReconciliation(BankAccount $bankAccount, BankReconciliation $reconciliation): void
