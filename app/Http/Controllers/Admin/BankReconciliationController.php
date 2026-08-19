@@ -107,7 +107,7 @@ class BankReconciliationController extends Controller
         $pointedTotal = $reconciliation->transactions()->sum('amount');
         $expectedTotal = $reconciliation->statement_balance - $openingBalance;
 
-        if (bccomp((string) $pointedTotal, (string) $expectedTotal, 2) !== 0) {
+        if (bccomp(number_format($pointedTotal, 2, '.', ''), number_format($expectedTotal, 2, '.', ''), 2) !== 0) {
             return to_route('bank-accounts.reconciliations.edit', [$bankAccount, $reconciliation])
                 ->with('error', 'Le solde pointé ne correspond pas au solde du relevé. Impossible de clôturer.');
         }

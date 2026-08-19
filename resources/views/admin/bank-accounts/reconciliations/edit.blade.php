@@ -21,7 +21,7 @@
 
     @php
         $gap = $expectedTotal - $pointedTotal;
-        $balanced = bccomp((string) $gap, '0.00', 2) === 0;
+        $balanced = bccomp(number_format($gap, 2, '.', ''), '0.00', 2) === 0;
     @endphp
 
     <div class="detail-grid">
