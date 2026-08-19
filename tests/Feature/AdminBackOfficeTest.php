@@ -30,14 +30,14 @@ class AdminBackOfficeTest extends TestCase
 
     public function test_guest_cannot_access_the_admin_area(): void
     {
-        $this->get('/dashboard')
+        $this->get('/admin-locative')
             ->assertRedirect('/login');
     }
 
     public function test_authenticated_user_without_admin_permission_is_forbidden(): void
     {
         $this->actingAs(User::factory()->create())
-            ->get('/dashboard')
+            ->get('/admin-locative')
             ->assertForbidden();
     }
 
@@ -47,7 +47,7 @@ class AdminBackOfficeTest extends TestCase
         $this->assertTrue($admin->can('access admin'));
 
         $this->actingAs($admin)
-            ->get('/dashboard')
+            ->get('/admin-locative')
             ->assertOk()
             ->assertSee('Vue d’ensemble');
     }
@@ -87,7 +87,7 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($this->admin())
-            ->get('/dashboard')
+            ->get('/admin-locative')
             ->assertOk()
             ->assertSee('Points d’attention')
             ->assertSee('Immeubles récents')
@@ -862,6 +862,98 @@ class AdminBackOfficeTest extends TestCase
 
         $this->assertTrue($tenant->user->is($user));
         $this->assertTrue($user->tenant->is($tenant));
+    }
+
+    public function test_admin_can_put_a_property_in_management_for_a_manager(): void
+    {
+        $admin = $this->admin();
+        $building = $this->createBuilding();
+        $property = Property::create([
+            'reference' => 'GESTION-01',
+            'name' => 'Bien en gestion',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'status' => 'active',
+        ]);
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+
+        $this->actingAs($admin)
+            ->put(route('properties.managers.update', $property), [
+                'managers' => [$manager->id],
+            ])
+            ->assertRedirect();
+
+        $this->assertTrue($property->managers()->whereKey($manager->id)->exists());
+        $this->assertTrue($manager->managedProperties()->whereKey($property->id)->exists());
+    }
+
+    public function test_manager_only_sees_properties_put_in_management_for_them(): void
+    {
+        $building = $this->createBuilding();
+        $ownProperty = Property::create([
+            'reference' => 'GESTION-02',
+            'name' => 'Bien géré',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'status' => 'active',
+        ]);
+        $otherProperty = Property::create([
+            'reference' => 'GESTION-03',
+            'name' => 'Bien non géré',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'status' => 'active',
+        ]);
+
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+        $ownProperty->managers()->attach($manager);
+
+        $this->actingAs($manager)
+            ->get(route('mes-biens'))
+            ->assertOk()
+            ->assertSee($ownProperty->name)
+            ->assertDontSee($otherProperty->name);
+
+        $this->actingAs($manager)
+            ->get(route('mes-biens.show', $ownProperty))
+            ->assertOk()
+            ->assertSee($ownProperty->name)
+            ->assertDontSee('Modifier')
+            ->assertDontSee('Mise en gestion');
+
+        $this->actingAs($manager)
+            ->get(route('mes-biens.show', $otherProperty))
+            ->assertForbidden();
+    }
+
+    public function test_locataire_can_only_reach_mes_contrats(): void
+    {
+        $locataire = User::factory()->create();
+        $locataire->assignRole('locataire');
+
+        $this->actingAs($locataire)
+            ->get(route('gestion-locative'))
+            ->assertOk()
+            ->assertDontSee('Mes biens')
+            ->assertDontSee('Mes locataires');
+
+        $this->actingAs($locataire)
+            ->get(route('mes-contrats'))
+            ->assertOk();
+
+        $this->actingAs($locataire)
+            ->get(route('mes-biens'))
+            ->assertForbidden();
+
+        $this->actingAs($locataire)
+            ->get(route('mes-locataires'))
+            ->assertForbidden();
+
+        $this->actingAs($locataire)
+            ->get(route('admin-locative'))
+            ->assertForbidden();
     }
 
     private function admin(): User

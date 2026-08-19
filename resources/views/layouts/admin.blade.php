@@ -15,6 +15,13 @@
             .admin-brand { display: block; margin: 0 10px 32px; color: #fff; font-weight: 750; }
             .admin-nav a { display: block; margin: 4px 0; padding: 10px 12px; border-radius: 8px; color: #c9d6df; }
             .admin-nav a:hover { color: #fff; background: rgba(255, 255, 255, .1); text-decoration: none; }
+            .nav-group { margin-top: 20px; }
+            .nav-group-header { display: flex; align-items: center; justify-content: space-between; }
+            .nav-group-header .chevron { color: #7c8ea3; font-size: .9rem; }
+            .nav-group-header.active { color: #fff; background: rgba(255, 255, 255, .1); }
+            .nav-group-header.active .chevron { color: #fff; }
+            .nav-submenu { margin-left: 12px; padding-left: 8px; border-left: 1px solid rgba(255, 255, 255, .12); }
+            .nav-submenu a { font-size: .92rem; }
             .admin-nav form { margin: 26px 0 0; }
             .admin-nav button { padding: 0 12px; border: 0; color: #9dd9d1; background: transparent; cursor: pointer; font: inherit; }
             .admin-main { max-width: 1200px; width: 100%; padding: 34px clamp(24px, 4vw, 52px); }
@@ -230,20 +237,68 @@
     <body>
         <div class="admin-shell">
             <aside class="admin-nav">
-                <a class="admin-brand" href="{{ route('dashboard') }}">Gestion locative</a>
-                <nav aria-label="Administration">
-                    <a href="{{ route('dashboard') }}">Vue d’ensemble</a>
-                    @can('view buildings')
-                        <a href="{{ route('buildings.index') }}">Immeubles</a>
-                    @endcan
-                    @can('view properties')
-                        <a href="{{ route('properties.index') }}">Biens</a>
-                    @endcan
-                    @can('view tenants')
-                        <a href="{{ route('tenants.index') }}">Locataires</a>
-                    @endcan
+                @php
+                    $gestionLocativeActive = request()->routeIs('gestion-locative')
+                        || request()->routeIs('mes-biens')
+                        || request()->routeIs('mes-biens.*')
+                        || request()->routeIs('mes-locataires')
+                        || request()->routeIs('mes-contrats');
+                    $adminLocativeActive = request()->routeIs('admin-locative')
+                        || request()->routeIs('buildings.*')
+                        || request()->routeIs('properties.*')
+                        || request()->routeIs('property-rooms.*')
+                        || request()->routeIs('tenants.*');
+                    $administrationsActive = request()->routeIs('administrations')
+                        || request()->routeIs('system-checks.*');
+                @endphp
+
+                <nav class="nav-group" aria-label="Menus">
+                    <a class="nav-group-header {{ $gestionLocativeActive ? 'active' : '' }}" href="{{ route('gestion-locative') }}">
+                        <span>Gestion Locative</span>
+                        <span class="chevron">{{ $gestionLocativeActive ? '⌃' : '⌄' }}</span>
+                    </a>
+                    @if ($gestionLocativeActive)
+                        <div class="nav-submenu">
+                            @can('view properties')
+                                <a href="{{ route('mes-biens') }}">Mes biens</a>
+                            @endcan
+                            @can('view tenants')
+                                <a href="{{ route('mes-locataires') }}">Mes locataires</a>
+                            @endcan
+                            <a href="{{ route('mes-contrats') }}">Mes contrats</a>
+                        </div>
+                    @endif
+
+                    @canany(['view buildings', 'view properties', 'view tenants'])
+                        <a class="nav-group-header {{ $adminLocativeActive ? 'active' : '' }}" href="{{ route('admin-locative') }}">
+                            <span>Admin Locative</span>
+                            <span class="chevron">{{ $adminLocativeActive ? '⌃' : '⌄' }}</span>
+                        </a>
+                        @if ($adminLocativeActive)
+                            <div class="nav-submenu">
+                                @can('view buildings')
+                                    <a href="{{ route('buildings.index') }}">Immeubles</a>
+                                @endcan
+                                @can('view properties')
+                                    <a href="{{ route('properties.index') }}">Biens</a>
+                                @endcan
+                                @can('view tenants')
+                                    <a href="{{ route('tenants.index') }}">Locataires</a>
+                                @endcan
+                            </div>
+                        @endif
+                    @endcanany
+
                     @can('manage system')
-                        <a href="{{ route('system-checks.index') }}">Configuration</a>
+                    <a class="nav-group-header {{ $administrationsActive ? 'active' : '' }}" href="{{ route('administrations') }}">
+                        <span>Admin Général</span>
+                        <span class="chevron">{{ $administrationsActive ? '⌃' : '⌄' }}</span>
+                    </a>
+                    @if ($administrationsActive)
+                        <div class="nav-submenu">
+                            <a href="{{ route('system-checks.index') }}">Configuration</a>
+                        </div>
+                    @endif
                     @endcan
                 </nav>
                 <form method="POST" action="{{ route('logout') }}">

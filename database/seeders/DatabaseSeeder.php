@@ -52,7 +52,10 @@ class DatabaseSeeder extends Seeder
             'manage notes',
         ]);
 
-        Role::findOrCreate('locataire', 'web');
+        $tenantRole = Role::findOrCreate('locataire', 'web');
+        $tenantRole->syncPermissions([
+            'access admin',
+        ]);
 
         $permissionRegistrar->forgetCachedPermissions();
 

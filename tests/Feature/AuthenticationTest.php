@@ -19,7 +19,7 @@ class AuthenticationTest extends TestCase
 
     public function test_guest_is_redirected_to_login_from_dashboard(): void
     {
-        $this->get('/dashboard')
+        $this->get('/admin-locative')
             ->assertRedirect('/login');
     }
 
@@ -27,7 +27,7 @@ class AuthenticationTest extends TestCase
     {
         $this->actingAs(User::factory()->create())
             ->get('/')
-            ->assertRedirect('/dashboard');
+            ->assertRedirect('/portal');
     }
 
     public function test_user_can_log_in_and_access_dashboard(): void
@@ -42,10 +42,10 @@ class AuthenticationTest extends TestCase
         $this->post('/login', [
             'email' => $user->email,
             'password' => 'secret-password',
-        ])->assertRedirect('/dashboard');
+        ])->assertRedirect('/portal');
 
         $this->assertAuthenticatedAs($user);
-        $this->get('/dashboard')
+        $this->get('/admin-locative')
             ->assertOk();
     }
 
@@ -54,7 +54,7 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->get('/dashboard')
+            ->get('/admin-locative')
             ->assertForbidden();
     }
 

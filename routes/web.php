@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\BuildingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\NoteController;
+use App\Http\Controllers\Admin\PortfolioController;
 use App\Http\Controllers\Admin\PropertyController;
 use App\Http\Controllers\Admin\PropertyRoomController;
 use App\Http\Controllers\Admin\SystemCheckController;
@@ -12,15 +13,36 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return auth()->check()
-        ? redirect()->route('dashboard')
+        ? redirect()->route('portal')
         : redirect()->route('login');
 });
 
 Route::middleware(['auth', 'permission:access admin'])
     ->group(function () {
-        Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::get('/portal', function () {
+            return auth()->user()->can('view properties')
+                ? redirect()->route('admin-locative')
+                : redirect()->route('gestion-locative');
+        })->name('portal');
+
         Route::get('/media/{media}/download', [MediaController::class, 'download'])
             ->name('media.download');
+
+        Route::view('/gestion-locative', 'menus.gestion-locative')->name('gestion-locative');
+        Route::view('/mes-contrats', 'menus.mes-contrats')->name('mes-contrats');
+        Route::view('/administrations', 'menus.administrations')->name('administrations');
+
+        Route::middleware('permission:view properties')->group(function () {
+            Route::get('/mes-biens', [PortfolioController::class, 'myProperties'])->name('mes-biens');
+            Route::get('/mes-biens/{property}', [PortfolioController::class, 'showProperty'])
+                ->whereNumber('property')
+                ->name('mes-biens.show');
+            Route::get('/admin-locative', DashboardController::class)->name('admin-locative');
+        });
+
+        Route::view('/mes-locataires', 'menus.mes-locataires')
+            ->middleware('permission:view tenants')
+            ->name('mes-locataires');
 
         Route::middleware('permission:manage system')->get('/configuration', SystemCheckController::class)
             ->name('system-checks.index');
@@ -77,6 +99,9 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::delete('/properties/{property}', [PropertyController::class, 'destroy'])
                 ->whereNumber('property')
                 ->name('properties.destroy');
+            Route::put('/properties/{property}/managers', [PropertyController::class, 'updateManagers'])
+                ->whereNumber('property')
+                ->name('properties.managers.update');
             Route::post('/properties/{property}/media', [MediaController::class, 'storeProperty'])
                 ->whereNumber('property')
                 ->name('properties.media.store');

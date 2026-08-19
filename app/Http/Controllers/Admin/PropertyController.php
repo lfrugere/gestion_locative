@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Address;
 use App\Models\Building;
 use App\Models\Property;
+use App\Models\User;
 use App\Services\AddressGeocoder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,7 +42,9 @@ class PropertyController extends Controller
                 'rooms.media',
                 'notes.author',
                 'notes.editor',
+                'managers',
             ]),
+            'managers' => User::role('gestionnaire')->orderBy('name')->get(),
         ]);
     }
 
@@ -61,6 +64,18 @@ class PropertyController extends Controller
     public function update(Request $request, Property $property, AddressGeocoder $geocoder): RedirectResponse
     {
         return $this->save($request, $property, $geocoder);
+    }
+
+    public function updateManagers(Request $request, Property $property): RedirectResponse
+    {
+        $validated = $request->validate([
+            'managers' => ['sometimes', 'array'],
+            'managers.*' => ['integer', Rule::exists('users', 'id')],
+        ]);
+
+        $property->managers()->sync($validated['managers'] ?? []);
+
+        return back()->with('success', 'Les gestionnaires du bien ont été mis à jour.');
     }
 
     public function destroy(Property $property): RedirectResponse
