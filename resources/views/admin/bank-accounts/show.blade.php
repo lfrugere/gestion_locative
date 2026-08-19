@@ -25,20 +25,33 @@
 
     <div class="detail-grid">
         <div class="detail-main">
-            <section class="detail-panel">
-                <div class="panel-heading"><div><span class="panel-kicker">Compte</span><h2>Informations</h2></div></div>
-                <p class="address-value">
-                    Gestionnaire : {{ $bankAccount->manager?->name ?? 'Aucun' }}<br>
-                    Solde initial : {{ number_format($bankAccount->initial_balance, 2, ',', ' ') }} € au {{ $bankAccount->initial_balance_date->format('d/m/Y') }}<br>
-                    Solde actuel : {{ number_format($bankAccount->balance, 2, ',', ' ') }} €
-                </p>
-            </section>
-
             <section class="detail-panel associated-panel">
-                <div class="panel-heading"><div><span class="panel-kicker">Mouvements</span><h2>Écritures bancaires</h2></div><span class="count-badge">{{ $bankAccount->transactions->count() }}</span></div>
+                <div class="panel-heading"><div><span class="panel-kicker">Mouvements</span><h2>Écritures bancaires</h2></div><span class="count-badge">{{ $transactions->count() }}</span></div>
 
-                @if ($bankAccount->transactions->isEmpty())
-                    <p class="empty compact">Aucune écriture n’a encore été enregistrée.</p>
+                <form class="card" method="GET" action="{{ route('bank-accounts.show', $bankAccount) }}">
+                    <div class="form-grid">
+                        <div class="form-field"><label for="f_q">Libellé</label><input id="f_q" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Rechercher…"></div>
+                        <div class="form-field"><label for="f_date_from">Du</label><input id="f_date_from" type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}"></div>
+                        <div class="form-field"><label for="f_date_to">Au</label><input id="f_date_to" type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}"></div>
+                        <div class="form-field">
+                            <label for="f_status">Statut</label>
+                            <select id="f_status" name="status">
+                                <option value="">Toutes</option>
+                                <option value="reconciled" {{ ($filters['status'] ?? '') === 'reconciled' ? 'selected' : '' }}>Rapprochées</option>
+                                <option value="unreconciled" {{ ($filters['status'] ?? '') === 'unreconciled' ? 'selected' : '' }}>Non rapprochées</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="button" type="submit">Filtrer</button>
+                        @if (array_filter($filters))
+                            <a class="button secondary" href="{{ route('bank-accounts.show', $bankAccount) }}">Réinitialiser</a>
+                        @endif
+                    </div>
+                </form>
+
+                @if ($transactions->isEmpty())
+                    <p class="empty compact">Aucune écriture ne correspond à ces critères.</p>
                 @else
                     <div class="card table-wrap">
                         <table>
@@ -46,7 +59,7 @@
                                 <tr><th>Date</th><th>Libellé</th><th style="text-align: right;">Montant</th><th>Rapprochement</th>@can('manage bank accounts')<th>Actions</th>@endcan</tr>
                             </thead>
                             <tbody>
-                                @foreach ($bankAccount->transactions as $transaction)
+                                @foreach ($transactions as $transaction)
                                     <tr>
                                         <td>{{ $transaction->date->format('d/m/Y') }}</td>
                                         <td>{{ $transaction->label }}</td>
@@ -121,5 +134,16 @@
                 @endif
             </section>
         </div>
+
+        <aside class="detail-aside">
+            <section class="detail-panel">
+                <div class="panel-heading"><div><span class="panel-kicker">Compte</span><h2>Informations</h2></div></div>
+                <p class="address-value">
+                    Gestionnaire : {{ $bankAccount->manager?->name ?? 'Aucun' }}<br>
+                    Solde initial : {{ number_format($bankAccount->initial_balance, 2, ',', ' ') }} € au {{ $bankAccount->initial_balance_date->format('d/m/Y') }}<br>
+                    Solde actuel : {{ number_format($bankAccount->balance, 2, ',', ' ') }} €
+                </p>
+            </section>
+        </aside>
     </div>
 @endsection

@@ -19,37 +19,13 @@
         </div>
     </section>
 
+    @php
+        $gap = $expectedTotal - $pointedTotal;
+        $balanced = bccomp((string) $gap, '0.00', 2) === 0;
+    @endphp
+
     <div class="detail-grid">
         <div class="detail-main">
-            @php
-                $gap = $expectedTotal - $pointedTotal;
-                $balanced = bccomp((string) $gap, '0.00', 2) === 0;
-            @endphp
-
-            <section class="detail-panel">
-                <div class="panel-heading"><div><span class="panel-kicker">Solde</span><h2>État du pointage</h2></div></div>
-                <div class="card table-wrap">
-                    <table>
-                        <tbody>
-                            <tr><td>Solde d’ouverture</td><td style="text-align: right;">{{ number_format($openingBalance, 2, ',', ' ') }} €</td></tr>
-                            <tr><td>Solde du relevé (à atteindre)</td><td style="text-align: right;">{{ number_format($reconciliation->statement_balance, 2, ',', ' ') }} €</td></tr>
-                            <tr><td>Mouvement attendu</td><td style="text-align: right;">{{ number_format($expectedTotal, 2, ',', ' ') }} €</td></tr>
-                            <tr><td>Total pointé ci-dessous</td><td style="text-align: right;">{{ number_format($pointedTotal, 2, ',', ' ') }} €</td></tr>
-                            <tr><td><strong>Écart</strong></td><td style="text-align: right;"><strong>{{ number_format($gap, 2, ',', ' ') }} €</strong></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                @if ($balanced)
-                    <form method="POST" action="{{ route('bank-accounts.reconciliations.close', [$bankAccount, $reconciliation]) }}">
-                        @csrf
-                        <div class="form-actions"><button class="button" type="submit">Clôturer le rapprochement</button></div>
-                    </form>
-                @else
-                    <p class="empty compact">L’écart doit être nul pour pouvoir clôturer le rapprochement.</p>
-                @endif
-            </section>
-
             <section class="detail-panel associated-panel">
                 <div class="panel-heading"><div><span class="panel-kicker">Écritures</span><h2>À pointer</h2></div></div>
 
@@ -89,5 +65,31 @@
                 @endif
             </section>
         </div>
+
+        <aside class="detail-aside">
+            <section class="detail-panel">
+                <div class="panel-heading"><div><span class="panel-kicker">Solde</span><h2>État du pointage</h2></div></div>
+                <div class="card table-wrap">
+                    <table>
+                        <tbody>
+                            <tr><td>Solde d’ouverture</td><td style="text-align: right;">{{ number_format($openingBalance, 2, ',', ' ') }} €</td></tr>
+                            <tr><td>Solde du relevé (à atteindre)</td><td style="text-align: right;">{{ number_format($reconciliation->statement_balance, 2, ',', ' ') }} €</td></tr>
+                            <tr><td>Mouvement attendu</td><td style="text-align: right;">{{ number_format($expectedTotal, 2, ',', ' ') }} €</td></tr>
+                            <tr><td>Total pointé ci-dessous</td><td style="text-align: right;">{{ number_format($pointedTotal, 2, ',', ' ') }} €</td></tr>
+                            <tr><td><strong>Écart</strong></td><td style="text-align: right;"><strong>{{ number_format($gap, 2, ',', ' ') }} €</strong></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                @if ($balanced)
+                    <form method="POST" action="{{ route('bank-accounts.reconciliations.close', [$bankAccount, $reconciliation]) }}">
+                        @csrf
+                        <div class="form-actions"><button class="button" type="submit">Clôturer le rapprochement</button></div>
+                    </form>
+                @else
+                    <p class="empty compact">L’écart doit être nul pour pouvoir clôturer le rapprochement.</p>
+                @endif
+            </section>
+        </aside>
     </div>
 @endsection
