@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\BankReconciliationController;
 use App\Http\Controllers\Admin\BankTransactionController;
 use App\Http\Controllers\Admin\BuildingController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\NoteController;
 use App\Http\Controllers\Admin\PortfolioController;
@@ -178,6 +179,15 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::post('/properties/{property}/rooms/{room}/media', [MediaController::class, 'storePropertyRoom'])
                 ->whereNumber(['property', 'room'])
                 ->name('property-rooms.media.store');
+        });
+
+        Route::middleware('permission:manage invoices')->group(function () {
+            Route::post('/properties/{property}/invoices', [InvoiceController::class, 'store'])
+                ->whereNumber('property')
+                ->name('properties.invoices.store');
+            Route::delete('/properties/{property}/invoices/{invoice}', [InvoiceController::class, 'destroy'])
+                ->whereNumber(['property', 'invoice'])
+                ->name('properties.invoices.destroy');
         });
 
         Route::middleware('permission:view tenants')->group(function () {

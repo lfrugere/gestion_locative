@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             'manage tenants',
             'view bank accounts',
             'manage bank accounts',
+            'manage invoices',
             'manage notes',
             'manage system',
             'manage users',

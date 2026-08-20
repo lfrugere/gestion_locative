@@ -92,6 +92,11 @@ class Property extends Model
         return $this->hasMany(PropertyRoom::class);
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class)->latest('date');
+    }
+
     public function managers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'property_manager');

@@ -58,7 +58,67 @@
                         <p class="empty compact">Aucun compte bancaire associé à ce bien.</p>
                     @endif
                 </section>
+            @endcan
 
+            @can('manage invoices')
+                <section class="detail-panel associated-panel">
+                    <div class="panel-heading"><div><span class="panel-kicker">Charges</span><h2>Factures</h2></div><span class="count-badge">{{ $property->invoices->count() }}</span></div>
+
+                    @if ($property->invoices->isEmpty())
+                        <p class="empty compact">Aucune facture n’a encore été ajoutée.</p>
+                    @else
+                        <div class="card table-wrap">
+                            <table>
+                                <thead>
+                                    <tr><th>Date</th><th>N°</th><th>Libellé</th><th style="text-align: right;">Montant</th><th>Écriture bancaire</th><th>Actions</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($property->invoices as $invoice)
+                                        <tr>
+                                            <td>{{ $invoice->date->format('d/m/Y') }}</td>
+                                            <td>{{ $invoice->number }}</td>
+                                            <td>{{ $invoice->label }}</td>
+                                            <td style="text-align: right;">{{ number_format($invoice->amount, 2, ',', ' ') }} €</td>
+                                            <td>
+                                                @if ($invoice->bankTransaction)
+                                                    <a href="{{ route('bank-accounts.show', $property->bank_account_id) }}">Ajoutée au compte</a>
+                                                @else
+                                                    <span class="hint">Aucun compte associé au bien</span>
+                                                @endif
+                                            </td>
+                                            <td class="actions">
+                                                <form method="POST" action="{{ route('properties.invoices.destroy', [$property, $invoice]) }}" onsubmit="return confirm('Supprimer cette facture ?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button class="icon-action danger-action" type="submit" aria-label="Supprimer la facture" data-tooltip="Supprimer" title="Supprimer"><span aria-hidden="true">×</span></button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+
+                    <form class="card" method="POST" action="{{ route('properties.invoices.store', $property) }}">
+                        @csrf
+                        <div class="form-grid">
+                            <div class="form-field"><label for="inv_number">N° de facture</label><input id="inv_number" name="number" required></div>
+                            <div class="form-field"><label for="inv_label">Libellé</label><input id="inv_label" name="label" required></div>
+                            <div class="form-field"><label for="inv_amount">Montant</label><input id="inv_amount" type="number" step="0.01" min="0.01" name="amount" placeholder="100.00" required></div>
+                            <div class="form-field"><label for="inv_date">Date</label><input id="inv_date" type="date" name="date" value="{{ now()->format('Y-m-d') }}" required></div>
+                        </div>
+                        @if ($property->bankAccount)
+                            <p class="hint">Cette facture ajoutera automatiquement une écriture de dépense sur le compte « {{ $property->bankAccount->label }} ».</p>
+                        @else
+                            <p class="hint">Aucun compte bancaire n’est associé à ce bien : la facture ne sera pas reportée sur un compte.</p>
+                        @endif
+                        <div class="form-actions"><button class="button" type="submit">Ajouter la facture</button></div>
+                    </form>
+                </section>
+            @endcan
+
+            @can('manage properties')
                 <section class="detail-panel">
                     <div class="panel-heading"><div><span class="panel-kicker">Attribution</span><h2>Mise en gestion</h2></div><span class="panel-icon">👤</span></div>
                     @if ($managers->isEmpty())
