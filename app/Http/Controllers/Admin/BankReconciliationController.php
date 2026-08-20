@@ -23,7 +23,7 @@ class BankReconciliationController extends Controller
             'openingBalance' => $lastClosed?->statement_balance ?? $bankAccount->initial_balance,
             'openingDate' => $lastClosed?->statement_date ?? $bankAccount->initial_balance_date,
             'isFirstReconciliation' => $isFirstReconciliation,
-            'suggestedStatementBalance' => $isFirstReconciliation ? $bankAccount->balance : null,
+            'suggestedStatementBalance' => $bankAccount->balance,
         ]);
     }
 
