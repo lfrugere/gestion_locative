@@ -142,6 +142,31 @@ class PropertyInvoiceTest extends TestCase
         $this->assertNull($invoice->number);
     }
 
+    public function test_admin_can_attach_files_directly_when_creating_an_invoice(): void
+    {
+        Storage::fake('local');
+
+        $property = $this->createProperty(null);
+
+        $this->actingAs($this->admin())
+            ->post(route('properties.invoices.store', $property), [
+                'label' => 'Entretien chaudière',
+                'amount' => 90,
+                'date' => '2026-08-20',
+                'attachments' => [
+                    UploadedFile::fake()->create('facture.pdf', 100, 'application/pdf'),
+                    UploadedFile::fake()->create('devis.pdf', 50, 'application/pdf'),
+                ],
+            ])
+            ->assertRedirect();
+
+        $invoice = $property->invoices()->first();
+
+        $this->assertNotNull($invoice);
+        $this->assertSame(2, $invoice->media()->count());
+        $invoice->media->each(fn ($media) => Storage::disk('local')->assertExists($media->path));
+    }
+
     public function test_admin_can_attach_and_remove_a_file_on_an_invoice(): void
     {
         Storage::fake('local');

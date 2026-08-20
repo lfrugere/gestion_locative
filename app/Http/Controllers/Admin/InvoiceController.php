@@ -4,14 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
+use App\Models\Media;
 use App\Models\Property;
+use App\Services\MediaManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class InvoiceController extends Controller
 {
-    public function store(Request $request, Property $property): RedirectResponse
+    public function store(Request $request, Property $property, MediaManager $manager): RedirectResponse
     {
         $validated = $request->validate([
             'supplier' => ['nullable', 'string', 'max:255'],
@@ -19,9 +21,11 @@ class InvoiceController extends Controller
             'label' => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'date' => ['required', 'date'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx'],
         ]);
 
-        DB::transaction(function () use ($validated, $property): void {
+        DB::transaction(function () use ($validated, $property, $manager): void {
             $invoice = $property->invoices()->create($validated);
 
             if ($property->bank_account_id) {
@@ -33,6 +37,10 @@ class InvoiceController extends Controller
                 ]);
                 $property->bankAccount->increment('balance', -$validated['amount']);
                 $invoice->update(['bank_transaction_id' => $transaction->id]);
+            }
+
+            foreach ($validated['attachments'] ?? [] as $attachment) {
+                $manager->store($invoice, $attachment, Media::KIND_DOCUMENT, Media::TYPE_OTHER, null, null);
             }
         });
 

@@ -118,7 +118,7 @@
                         </div>
                     @endif
 
-                    <form class="card" method="POST" action="{{ route('properties.invoices.store', $property) }}">
+                    <form class="card" method="POST" action="{{ route('properties.invoices.store', $property) }}" enctype="multipart/form-data">
                         @csrf
                         <div class="form-grid">
                             <div class="form-field"><label for="inv_supplier">Fournisseur</label><input id="inv_supplier" name="supplier" placeholder="Optionnel"></div>
@@ -126,6 +126,7 @@
                             <div class="form-field"><label for="inv_label">Libellé</label><input id="inv_label" name="label" required></div>
                             <div class="form-field"><label for="inv_amount">Montant</label><input id="inv_amount" type="number" step="0.01" min="0.01" name="amount" placeholder="100.00" required></div>
                             <div class="form-field"><label for="inv_date">Date</label><input id="inv_date" type="date" name="date" value="{{ now()->format('Y-m-d') }}" required></div>
+                            <div class="form-field"><label for="inv_attachments">Pièces jointes</label><input id="inv_attachments" type="file" name="attachments[]" multiple></div>
                         </div>
                         @if ($property->bankAccount)
                             <p class="hint">Cette facture ajoutera automatiquement une écriture de dépense sur le compte « {{ $property->bankAccount->label }} ».</p>
