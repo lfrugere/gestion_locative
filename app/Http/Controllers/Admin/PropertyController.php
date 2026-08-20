@@ -47,6 +47,7 @@ class PropertyController extends Controller
                 'notes.editor',
                 'managers',
                 'invoices.bankTransaction',
+                'invoices.media',
             ]),
             'managers' => User::role('gestionnaire')->orderBy('name')->get(),
         ]);

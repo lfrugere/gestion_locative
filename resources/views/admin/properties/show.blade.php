@@ -70,13 +70,14 @@
                         <div class="card table-wrap">
                             <table>
                                 <thead>
-                                    <tr><th>Date</th><th>N°</th><th>Libellé</th><th style="text-align: right;">Montant</th><th>Écriture bancaire</th><th>Actions</th></tr>
+                                    <tr><th>Date</th><th>Fournisseur</th><th>N°</th><th>Libellé</th><th style="text-align: right;">Montant</th><th>Écriture bancaire</th><th>Pièces jointes</th><th>Actions</th></tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($property->invoices as $invoice)
                                         <tr>
                                             <td>{{ $invoice->date->format('d/m/Y') }}</td>
-                                            <td>{{ $invoice->number }}</td>
+                                            <td>{{ $invoice->supplier ?: '—' }}</td>
+                                            <td>{{ $invoice->number ?: '—' }}</td>
                                             <td>{{ $invoice->label }}</td>
                                             <td style="text-align: right;">{{ number_format($invoice->amount, 2, ',', ' ') }} €</td>
                                             <td>
@@ -85,6 +86,23 @@
                                                 @else
                                                     <span class="hint">Aucun compte associé au bien</span>
                                                 @endif
+                                            </td>
+                                            <td>
+                                                @foreach ($invoice->media as $file)
+                                                    <div style="display:flex; align-items:center; gap:4px;">
+                                                        <a href="{{ route('media.download', $file) }}">{{ $file->display_name }}</a>
+                                                        <form method="POST" action="{{ route('media.destroy', $file) }}" onsubmit="return confirm('Supprimer cette pièce jointe ?')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button class="icon-action danger-action" type="submit" aria-label="Supprimer la pièce jointe" data-tooltip="Supprimer" title="Supprimer"><span aria-hidden="true">×</span></button>
+                                                        </form>
+                                                    </div>
+                                                @endforeach
+                                                <form method="POST" action="{{ route('properties.invoices.media.store', [$property, $invoice]) }}" enctype="multipart/form-data" style="margin-top:4px;">
+                                                    @csrf
+                                                    <input type="file" name="file" required style="max-width: 160px;">
+                                                    <button class="button secondary" type="submit">Ajouter</button>
+                                                </form>
                                             </td>
                                             <td class="actions">
                                                 <form method="POST" action="{{ route('properties.invoices.destroy', [$property, $invoice]) }}" onsubmit="return confirm('Supprimer cette facture ?')">
@@ -103,7 +121,8 @@
                     <form class="card" method="POST" action="{{ route('properties.invoices.store', $property) }}">
                         @csrf
                         <div class="form-grid">
-                            <div class="form-field"><label for="inv_number">N° de facture</label><input id="inv_number" name="number" required></div>
+                            <div class="form-field"><label for="inv_supplier">Fournisseur</label><input id="inv_supplier" name="supplier" placeholder="Optionnel"></div>
+                            <div class="form-field"><label for="inv_number">N° de facture</label><input id="inv_number" name="number" placeholder="Optionnel"></div>
                             <div class="form-field"><label for="inv_label">Libellé</label><input id="inv_label" name="label" required></div>
                             <div class="form-field"><label for="inv_amount">Montant</label><input id="inv_amount" type="number" step="0.01" min="0.01" name="amount" placeholder="100.00" required></div>
                             <div class="form-field"><label for="inv_date">Date</label><input id="inv_date" type="date" name="date" value="{{ now()->format('Y-m-d') }}" required></div>

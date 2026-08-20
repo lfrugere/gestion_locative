@@ -14,7 +14,8 @@ class InvoiceController extends Controller
     public function store(Request $request, Property $property): RedirectResponse
     {
         $validated = $request->validate([
-            'number' => ['required', 'string', 'max:100'],
+            'supplier' => ['nullable', 'string', 'max:255'],
+            'number' => ['nullable', 'string', 'max:100'],
             'label' => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'date' => ['required', 'date'],
@@ -24,8 +25,9 @@ class InvoiceController extends Controller
             $invoice = $property->invoices()->create($validated);
 
             if ($property->bank_account_id) {
+                $label = 'Facture '.($validated['number'] ?: '(sans numéro)').' — '.$validated['label'];
                 $transaction = $property->bankAccount->transactions()->create([
-                    'label' => 'Facture '.$validated['number'].' — '.$validated['label'],
+                    'label' => $label,
                     'date' => $validated['date'],
                     'amount' => -$validated['amount'],
                 ]);

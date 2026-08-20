@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Building;
+use App\Models\Invoice;
 use App\Models\Media;
 use App\Models\Property;
 use App\Models\PropertyRoom;
@@ -44,6 +45,19 @@ class MediaController extends Controller
         }
 
         return $this->store($request, $tenant, $manager, 'tenants.show');
+    }
+
+    public function storeInvoice(Request $request, Property $property, Invoice $invoice, MediaManager $manager): RedirectResponse
+    {
+        abort_unless($invoice->property_id === $property->id, 404);
+
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx'],
+        ]);
+
+        $manager->store($invoice, $validated['file'], Media::KIND_DOCUMENT, Media::TYPE_OTHER, null, null);
+
+        return to_route('properties.show', $property)->with('success', 'La pièce jointe a été ajoutée.');
     }
 
     public function update(Request $request, Media $media, MediaManager $manager): RedirectResponse
@@ -120,6 +134,7 @@ class MediaController extends Controller
             Property::class => auth()->user()->can('view properties'),
             PropertyRoom::class => auth()->user()->can('view properties'),
             Tenant::class => auth()->user()->can('view tenants'),
+            Invoice::class => auth()->user()->can('manage invoices'),
             default => false,
         };
     }
@@ -131,6 +146,7 @@ class MediaController extends Controller
             Property::class => auth()->user()->can('manage properties'),
             PropertyRoom::class => auth()->user()->can('manage properties'),
             Tenant::class => auth()->user()->can('manage tenants'),
+            Invoice::class => auth()->user()->can('manage invoices'),
             default => false,
         };
     }

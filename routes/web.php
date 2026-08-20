@@ -188,6 +188,9 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::delete('/properties/{property}/invoices/{invoice}', [InvoiceController::class, 'destroy'])
                 ->whereNumber(['property', 'invoice'])
                 ->name('properties.invoices.destroy');
+            Route::post('/properties/{property}/invoices/{invoice}/media', [MediaController::class, 'storeInvoice'])
+                ->whereNumber(['property', 'invoice'])
+                ->name('properties.invoices.media.store');
         });
 
         Route::middleware('permission:view tenants')->group(function () {

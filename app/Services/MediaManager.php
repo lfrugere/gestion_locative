@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Building;
+use App\Models\Invoice;
 use App\Models\Media;
 use App\Models\Property;
 use App\Models\PropertyRoom;
@@ -48,6 +49,7 @@ class MediaManager
             $mediable instanceof Property => 'property/'.$mediable->reference,
             $mediable instanceof PropertyRoom => 'property/'.$mediable->property->reference.'/room/'.$mediable->id,
             $mediable instanceof Tenant => 'tenant/'.$mediable->storage_key,
+            $mediable instanceof Invoice => 'property/'.$mediable->property->reference.'/invoice/'.$mediable->id,
             default => throw new \InvalidArgumentException('Type de propriétaire de média non supporté.'),
         };
 

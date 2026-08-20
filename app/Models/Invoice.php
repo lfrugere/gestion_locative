@@ -5,8 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['property_id', 'bank_transaction_id', 'number', 'label', 'amount', 'date'])]
+#[Fillable(['property_id', 'bank_transaction_id', 'supplier', 'number', 'label', 'amount', 'date'])]
 class Invoice extends Model
 {
     protected function casts(): array
@@ -25,5 +26,10 @@ class Invoice extends Model
     public function bankTransaction(): BelongsTo
     {
         return $this->belongsTo(BankTransaction::class);
+    }
+
+    public function media(): MorphMany
+    {
+        return $this->morphMany(Media::class, 'mediable');
     }
 }

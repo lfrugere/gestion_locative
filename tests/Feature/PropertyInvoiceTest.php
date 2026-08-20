@@ -9,6 +9,8 @@ use App\Models\Property;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -119,6 +121,60 @@ class PropertyInvoiceTest extends TestCase
                 'date' => '2026-08-20',
             ])
             ->assertForbidden();
+    }
+
+    public function test_invoice_can_be_created_without_supplier_or_number(): void
+    {
+        $property = $this->createProperty(null);
+
+        $this->actingAs($this->admin())
+            ->post(route('properties.invoices.store', $property), [
+                'label' => 'Divers',
+                'amount' => 42,
+                'date' => '2026-08-20',
+            ])
+            ->assertRedirect();
+
+        $invoice = $property->invoices()->first();
+
+        $this->assertNotNull($invoice);
+        $this->assertNull($invoice->supplier);
+        $this->assertNull($invoice->number);
+    }
+
+    public function test_admin_can_attach_and_remove_a_file_on_an_invoice(): void
+    {
+        Storage::fake('local');
+
+        $property = $this->createProperty(null);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('properties.invoices.store', $property), [
+            'supplier' => 'Plombier Dupont',
+            'number' => 'F-2026-010',
+            'label' => 'Fuite salle de bain',
+            'amount' => 220,
+            'date' => '2026-08-20',
+        ]);
+
+        $invoice = $property->invoices()->first();
+
+        $this->actingAs($admin)
+            ->post(route('properties.invoices.media.store', [$property, $invoice]), [
+                'file' => UploadedFile::fake()->create('facture.pdf', 100, 'application/pdf'),
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(1, $invoice->media()->count());
+        $media = $invoice->media()->first();
+        Storage::disk('local')->assertExists($media->path);
+
+        $this->actingAs($admin)
+            ->delete(route('media.destroy', $media))
+            ->assertRedirect();
+
+        $this->assertSame(0, $invoice->media()->count());
+        Storage::disk('local')->assertMissing($media->path);
     }
 
     private function admin(): User
