@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Media;
 use App\Models\Property;
+use App\Models\Tag;
 use App\Services\MediaManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,10 +24,13 @@ class InvoiceController extends Controller
             'date' => ['required', 'date'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx'],
+            'tags' => ['nullable', 'string', 'max:500'],
         ]);
 
         DB::transaction(function () use ($validated, $property, $manager): void {
             $invoice = $property->invoices()->create($validated);
+
+            $invoice->tags()->sync(Tag::idsFromText($validated['tags'] ?? null));
 
             if ($property->bank_account_id) {
                 $label = 'Facture '.($validated['number'] ?: '(sans numéro)').' — '.$validated['label'];

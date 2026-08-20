@@ -6,6 +6,7 @@ use App\Models\Address;
 use App\Models\BankAccount;
 use App\Models\Building;
 use App\Models\Property;
+use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -142,6 +143,36 @@ class PropertyInvoiceTest extends TestCase
         $this->assertNull($invoice->number);
     }
 
+    public function test_admin_can_tag_an_invoice_with_freeform_comma_separated_tags(): void
+    {
+        $property = $this->createProperty(null);
+
+        $this->actingAs($this->admin())
+            ->post(route('properties.invoices.store', $property), [
+                'label' => 'Ravalement façade',
+                'amount' => 500,
+                'date' => '2026-08-20',
+                'tags' => 'travaux, Urgent , travaux',
+            ])
+            ->assertRedirect();
+
+        $invoice = $property->invoices()->first();
+
+        $this->assertNotNull($invoice);
+        $this->assertSame(['travaux', 'Urgent'], $invoice->tags->pluck('name')->all());
+
+        $secondProperty = $this->createProperty(null, 'BIEN-TEST-2');
+        $this->actingAs($this->admin())
+            ->post(route('properties.invoices.store', $secondProperty), [
+                'label' => 'Autre facture',
+                'amount' => 10,
+                'date' => '2026-08-20',
+                'tags' => 'travaux',
+            ]);
+
+        $this->assertSame(1, Tag::where('name', 'travaux')->count());
+    }
+
     public function test_admin_can_attach_files_directly_when_creating_an_invoice(): void
     {
         Storage::fake('local');
@@ -210,7 +241,7 @@ class PropertyInvoiceTest extends TestCase
         return $user;
     }
 
-    private function createProperty(?int $bankAccountId): Property
+    private function createProperty(?int $bankAccountId, string $reference = 'BIEN-TEST'): Property
     {
         $address = Address::create([
             'line1' => '1 rue du Test',
@@ -220,13 +251,13 @@ class PropertyInvoiceTest extends TestCase
         ]);
 
         $building = Building::create([
-            'reference' => 'IMMEUBLE-TEST',
+            'reference' => 'IMMEUBLE-'.$reference,
             'name' => 'Immeuble test',
             'address_id' => $address->id,
         ]);
 
         return Property::create([
-            'reference' => 'BIEN-TEST',
+            'reference' => $reference,
             'name' => 'Bien test',
             'type' => Property::TYPE_APARTMENT,
             'building_id' => $building->id,

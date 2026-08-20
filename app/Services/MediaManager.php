@@ -97,14 +97,6 @@ class MediaManager
 
     private function syncTags(Media $media, ?string $tags): void
     {
-        $names = collect(explode(',', (string) $tags))
-            ->map(fn (string $tag): string => trim($tag))
-            ->filter()
-            ->map(fn (string $tag): string => Str::limit($tag, 50, ''))
-            ->unique()
-            ->values();
-
-        $tagIds = $names->map(fn (string $name): int => Tag::firstOrCreate(['name' => $name])->id);
-        $media->tags()->sync($tagIds);
+        $media->tags()->sync(Tag::idsFromText($tags));
     }
 }
