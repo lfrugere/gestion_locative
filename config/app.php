@@ -56,6 +56,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Version
+    |--------------------------------------------------------------------------
+    |
+    | Renseigné dans l'image Docker au build depuis le tag de la GitHub
+    | Release (voir .github/workflows/publish-image.yml et l'ARG
+    | APP_VERSION du Dockerfile). Vaut "dev" en dehors d'une image publiée.
+    |
+    */
+
+    'version' => env('APP_VERSION', 'dev'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
