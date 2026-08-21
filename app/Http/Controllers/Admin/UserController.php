@@ -16,6 +16,8 @@ class UserController extends Controller
 {
     public function index(): View
     {
+        $this->authorize('viewAny', User::class);
+
         return view('admin.users.index', [
             'users' => User::with('roles')->orderBy('name')->get(),
         ]);
@@ -23,6 +25,8 @@ class UserController extends Controller
 
     public function create(): View
     {
+        $this->authorize('create', User::class);
+
         return view('admin.users.create', [
             'roles' => Role::pluck('name'),
         ]);
@@ -30,6 +34,8 @@ class UserController extends Controller
 
     public function edit(User $user): View
     {
+        $this->authorize('update', $user);
+
         return view('admin.users.edit', [
             'user' => $user->load('roles'),
             'roles' => Role::pluck('name'),
@@ -38,16 +44,21 @@ class UserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $this->authorize('create', User::class);
+
         return $this->save($request);
     }
 
     public function update(Request $request, User $user): RedirectResponse
     {
+        $this->authorize('update', $user);
+
         return $this->save($request, $user);
     }
 
     public function destroy(User $user): RedirectResponse
     {
+        $this->authorize('delete', $user);
         abort_if($user->id === auth()->id(), 403, 'Vous ne pouvez pas supprimer votre propre compte.');
 
         $user->delete();

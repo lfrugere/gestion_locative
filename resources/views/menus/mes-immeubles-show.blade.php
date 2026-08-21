@@ -55,9 +55,9 @@
                 @endif
             </section>
 
-            @include('admin._media', ['media' => $building->media, 'mediable' => $building, 'managePermission' => 'manage buildings', 'canManageMedia' => false, 'uploadRoute' => '#'])
+            @include('admin._media', ['media' => $building->media, 'mediable' => $building, 'canManageMedia' => false, 'uploadRoute' => '#'])
 
-            @include('admin._notes', ['notes' => $building->notes, 'managePermission' => 'manage notes', 'canManageNotes' => false, 'storeRoute' => '#'])
+            @include('admin._notes', ['notes' => $building->notes, 'canManageNotes' => false, 'storeRoute' => '#'])
         </div>
 
         <aside class="detail-aside">

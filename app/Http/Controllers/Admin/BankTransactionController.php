@@ -13,7 +13,7 @@ class BankTransactionController extends Controller
 {
     public function store(Request $request, BankAccount $bankAccount): RedirectResponse
     {
-        abort_unless($this->canManage($bankAccount), 403);
+        $this->authorize('manageTransactions', $bankAccount);
 
         $validated = $request->validate([
             'label' => ['required', 'string', 'max:255'],
@@ -32,7 +32,7 @@ class BankTransactionController extends Controller
 
     public function destroy(BankAccount $bankAccount, BankTransaction $transaction): RedirectResponse
     {
-        abort_unless($this->canManage($bankAccount), 403);
+        $this->authorize('manageTransactions', $bankAccount);
 
         if ($transaction->isLocked()) {
             return to_route('bank-accounts.show', $bankAccount)
@@ -46,13 +46,6 @@ class BankTransactionController extends Controller
 
         return to_route($this->showRouteName(), $bankAccount)
             ->with('success', 'L’écriture a été supprimée.');
-    }
-
-    private function canManage(BankAccount $bankAccount): bool
-    {
-        $user = auth()->user();
-
-        return $user->hasRole('admin') || $bankAccount->isManagedBy($user);
     }
 
     private function showRouteName(): string

@@ -8,7 +8,7 @@
             <p class="muted">Patrimoine</p>
             <h1>Biens immobiliers</h1>
         </div>
-        @can('manage properties')
+        @can('create', \App\Models\Property::class)
             <a class="button" href="{{ route('properties.create') }}">Ajouter un bien</a>
         @endcan
     </div>
@@ -40,7 +40,7 @@
                             <td>@if($property->is_shared_accommodation)<span class="status-pill status-active">Colocation</span>@else<span class="muted">Classique</span>@endif</td>
                             <td>{{ $property->status === 'active' ? 'Actif' : 'Inactif' }}</td>
                             <td class="actions">
-                                @can('manage properties')
+                                @can('update', $property)
                                     <a class="icon-action" href="{{ route('properties.edit', $property) }}" aria-label="Modifier {{ $property->name }}" data-tooltip="Modifier" title="Modifier"><span aria-hidden="true">✎</span></a>
                                     <form method="POST" action="{{ route('properties.destroy', $property) }}" onsubmit="return confirm('Supprimer ce bien ?')">
                                         @csrf

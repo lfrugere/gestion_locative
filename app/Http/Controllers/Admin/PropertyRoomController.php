@@ -15,6 +15,7 @@ class PropertyRoomController extends Controller
 {
     public function create(Property $property): View
     {
+        $this->authorize('create', PropertyRoom::class);
         abort_unless($property->canHaveRooms(), 404);
 
         return view('admin.property-rooms.create', [
@@ -25,6 +26,7 @@ class PropertyRoomController extends Controller
 
     public function store(Request $request, Property $property): RedirectResponse
     {
+        $this->authorize('create', PropertyRoom::class);
         abort_unless($property->canHaveRooms(), 404);
 
         $property->rooms()->create($this->validated($request));
@@ -36,6 +38,7 @@ class PropertyRoomController extends Controller
     public function show(Property $property, PropertyRoom $room): View
     {
         $this->ensureRoomBelongsToProperty($property, $room);
+        $this->authorize('view', $property);
 
         $user = auth()->user();
 
@@ -49,6 +52,7 @@ class PropertyRoomController extends Controller
     public function edit(Property $property, PropertyRoom $room): View
     {
         $this->ensureRoomBelongsToProperty($property, $room);
+        $this->authorize('update', $room);
         abort_unless($property->canHaveRooms(), 404);
 
         return view('admin.property-rooms.edit', [
@@ -60,6 +64,7 @@ class PropertyRoomController extends Controller
     public function update(Request $request, Property $property, PropertyRoom $room): RedirectResponse
     {
         $this->ensureRoomBelongsToProperty($property, $room);
+        $this->authorize('update', $room);
         abort_unless($property->canHaveRooms(), 404);
 
         $room->update($this->validated($request));
@@ -71,6 +76,7 @@ class PropertyRoomController extends Controller
     public function destroy(Property $property, PropertyRoom $room, MediaManager $mediaManager): RedirectResponse
     {
         $this->ensureRoomBelongsToProperty($property, $room);
+        $this->authorize('delete', $room);
 
         $room->media->each(fn ($media) => $mediaManager->delete($media));
         $room->delete();

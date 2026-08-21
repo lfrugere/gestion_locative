@@ -159,9 +159,9 @@
             @endif
 
             @unless (auth()->user()->hasRole('admin'))
-                @include('admin._media', ['media' => $property->media, 'mediable' => $property, 'managePermission' => 'manage properties', 'canManageMedia' => $isPropertyManager, 'uploadRoute' => route('properties.media.store', $property)])
+                @include('admin._media', ['media' => $property->media, 'mediable' => $property, 'canManageMedia' => $isPropertyManager, 'uploadRoute' => route('properties.media.store', $property)])
 
-                @include('admin._notes', ['notes' => $property->notes, 'managePermission' => 'manage notes', 'canManageNotes' => $isPropertyManager, 'storeRoute' => route('properties.notes.store', $property)])
+                @include('admin._notes', ['notes' => $property->notes, 'canManageNotes' => $isPropertyManager, 'storeRoute' => route('properties.notes.store', $property)])
             @endunless
         </div>
 

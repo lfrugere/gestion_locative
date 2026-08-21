@@ -16,7 +16,7 @@ class InvoiceController extends Controller
 {
     public function store(Request $request, Property $property, MediaManager $manager): RedirectResponse
     {
-        abort_unless($this->canManageInvoicesFor($property), 403);
+        $this->authorize('create', [Invoice::class, $property]);
 
         $validated = $request->validate([
             'supplier' => ['nullable', 'string', 'max:255'],
@@ -56,7 +56,7 @@ class InvoiceController extends Controller
     public function destroy(Property $property, Invoice $invoice): RedirectResponse
     {
         abort_unless($invoice->property_id === $property->id, 404);
-        abort_unless($this->canManageInvoicesFor($property), 403);
+        $this->authorize('delete', $invoice);
 
         $transaction = $invoice->bankTransaction;
 
@@ -73,13 +73,5 @@ class InvoiceController extends Controller
         });
 
         return back()->with('success', 'La facture a été supprimée.');
-    }
-
-    // Le rôle admin n'a plus accès aux factures, comme pour les médias et les notes
-    // (cf. docs/roles-permissions.md) : seul l'ownership (isManagedBy) autorise l'accès,
-    // ce qui exclut de facto l'admin puisqu'il n'est jamais rattaché comme gestionnaire.
-    private function canManageInvoicesFor(Property $property): bool
-    {
-        return $property->isManagedBy(auth()->user());
     }
 }

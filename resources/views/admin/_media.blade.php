@@ -2,7 +2,7 @@
 @php($documents = $media->where('kind', \App\Models\Media::KIND_DOCUMENT))
 @php($mediaTypes = \App\Models\Media::documentTypesFor($mediable))
 @php($singlePhoto = $singlePhoto ?? false)
-@php($canManageMedia = $canManageMedia ?? auth()->user()->can($managePermission))
+@php($canManageMedia = $canManageMedia ?? false)
 
 <section class="card media-card">
     <div class="media-card-header">

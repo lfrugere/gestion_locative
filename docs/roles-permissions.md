@@ -1,6 +1,8 @@
 # Rôles et permissions
 
-Ce document recense, entité par entité, qui a le droit de faire quoi dans le back-office. Il complète [architecture.md](architecture.md) §5, qui décrit le mécanisme général (Spatie, middleware de route + directives Blade). Toute évolution des droits doit être répercutée ici, dans `database/seeders/DatabaseSeeder.php` et dans un test fonctionnel.
+Ce document recense, entité par entité, qui a le droit de faire quoi dans le back-office. Il complète [architecture.md](architecture.md) §5, qui décrit le mécanisme général (rôles Spatie + Policies Laravel, middleware de route + directives Blade). Toute évolution des droits doit être répercutée ici, dans les classes `app/Policies/*Policy.php` (et les deux Gates de `AppServiceProvider`) et dans un test fonctionnel.
+
+Les permissions Spatie ont été retirées : seuls les **rôles** Spatie (`admin`, `gestionnaire`, `locataire`, via `HasRoles` sur `User`) subsistent. Toute la logique fine d'autorisation (y compris l'ownership `isManagedBy`) vit désormais dans des [Policies Laravel](https://laravel.com/docs/authorization#creating-policies) auto-découvertes (`App\Policies\{Model}Policy` pour `App\Models\{Model}`), appelées via `$this->authorize(...)` dans les contrôleurs. Les deux seules autorisations qui ne portent pas sur un modèle Eloquent (`access admin`, `manage system`) sont des `Gate::define(...)` déclarées dans `AppServiceProvider::boot()`.
 
 ## Rôles
 
@@ -8,7 +10,7 @@ Ce document recense, entité par entité, qui a le droit de faire quoi dans le b
 |---|---|
 | `admin` | Compte créé depuis `ADMIN_NAME` / `ADMIN_EMAIL` / `ADMIN_PASSWORD` (seeder). Accès complet à toutes les entités, y compris les pages `/buildings`, `/tenants`, `/bank-accounts`. **Exception : aucun accès aux médias (photos, pièces jointes), au fil de notes, ni aux factures, sur aucune entité** — décision produit volontaire, voir section dédiée ci-dessous. |
 | `gestionnaire` | Compte créé depuis `MANAGER_NAME` / `MANAGER_EMAIL` / `MANAGER_PASSWORD` (seeder), ou attribué à un utilisateur via le back-office. Accès en écriture limité aux biens dont il est explicitement gestionnaire (table `property_manager`). Pour les immeubles, locataires et comptes bancaires, il n'a plus qu'un accès en **lecture seule**, via des pages dédiées scopées à ses biens gérés (voir ci-dessous) — les pages admin `/buildings`, `/tenants`, `/bank-accounts` lui sont strictement interdites, y compris par URL directe. |
-| `locataire` | Réservé aux évolutions futures (accès locataire). N'a aujourd'hui que la permission `access admin`, ce qui lui permet de se connecter et d'atteindre `/mes-contrats` ; aucune autre route ne lui est ouverte. |
+| `locataire` | Réservé aux évolutions futures (accès locataire). N'a aujourd'hui accès qu'au Gate `access-admin`, ce qui lui permet de se connecter et d'atteindre `/mes-contrats` ; aucune autre route ne lui est ouverte. |
 
 Un même compte ne doit porter qu'un seul de ces rôles à la fois. Le seeder crée deux comptes distincts (`ADMIN_*` et `MANAGER_*`) plutôt qu'un compte cumulant les rôles admin et gestionnaire.
 
@@ -16,11 +18,11 @@ Un même compte ne doit porter qu'un seul de ces rôles à la fois. Le seeder cr
 
 Décision produit volontaire (pas une régression) : le rôle `admin` n'a **aucun accès**, ni en lecture ni en écriture, aux médias (photos, pièces jointes — y compris les pièces jointes de facture), au fil de notes, et aux **factures**, sur **aucune** entité (immeubles, biens, pièces de colocation, locataires). Les sections correspondantes sont entièrement masquées dans les vues pour un admin, et les routes sont bloquées côté serveur même par URL directe.
 
-Mécanisme : `MediaController`, `NoteController` et `InvoiceController` n'ont plus de bypass `$user->hasRole('admin') ||` dans leurs contrôles d'autorisation — `canView()`/`canManage()` (médias) excluent explicitement l'admin en tête de fonction, et les contrôles d'ownership (`isManagedBy`) sont utilisés seuls, ce qui exclut l'admin de facto puisqu'il n'est jamais rattaché comme gestionnaire d'un bien. `NoteController::canModify` n'autorise plus non plus l'admin à modifier/supprimer la note d'un autre auteur. `InvoiceController::canManageInvoicesFor` suit le même principe.
+Mécanisme : `App\Policies\MediaPolicy`, `App\Policies\NotePolicy` et `App\Policies\InvoicePolicy` n'ont plus de bypass `$user->hasRole('admin') ||` dans leurs méthodes — `MediaPolicy::view()`/`update()` excluent explicitement l'admin en tête de fonction, et les contrôles d'ownership (`isManagedBy`) sont utilisés seuls, ce qui exclut l'admin de facto puisqu'il n'est jamais rattaché comme gestionnaire d'un bien. `NotePolicy::update()`/`delete()` n'autorisent plus non plus l'admin à modifier/supprimer la note d'un autre auteur. `InvoicePolicy::create()`/`delete()` suivent le même principe.
 
 **Conséquence assumée** : certaines fonctionnalités deviennent inatteignables par personne, faute d'un rôle qui en ait le droit :
-- Photos et pièces jointes sur un **immeuble** (`manage buildings`, permission admin only).
-- Photos sur une **pièce de colocation** (`manage properties`, permission admin only).
+- Photos et pièces jointes sur un **immeuble** (réservé à l'admin, exclu des médias).
+- Photos sur une **pièce de colocation** (réservé à l'admin, exclu des médias).
 - Photos, pièce d'identité et documents sur un **locataire** (le gestionnaire n'a plus `manage tenants` non plus, cf. section Locataires).
 - Notes sur un **immeuble** ou un **locataire**.
 
@@ -37,45 +39,45 @@ Un menu caché côté sidebar (`@hasrole`/`@hasanyrole` dans `resources/views/la
 | Comptes bancaires (compte lui-même : CRUD) | `/bank-accounts`, `/bank-accounts/{id}`, création/édition/suppression du compte | ❌ aucune page équivalente : le gestionnaire ne crée ni ne modifie un compte |
 | Comptes bancaires (écritures, rapprochements) | mêmes routes `bank-accounts.transactions.*` / `bank-accounts.reconciliations.*` | mêmes routes, ouvertes au gestionnaire, scopées par compte géré ; consultées depuis `/mes-comptes-bancaires/{id}` |
 
-Toutes les routes `/buildings*`, `/tenants*`, ainsi que le listing/la fiche/le CRUD du compte bancaire lui-même sous `/bank-accounts*` (création, édition, suppression du compte), portent le middleware **`role:admin`** en plus du middleware `permission:...` existant (`routes/web.php`) :
+Toutes les routes `/buildings*`, `/tenants*`, ainsi que le listing/la fiche/le CRUD du compte bancaire lui-même sous `/bank-accounts*` (création, édition, suppression du compte), portent le middleware **`role:admin`** en plus de l'appel `$this->authorize(...)` fait dans le contrôleur, qui délègue à `BuildingPolicy` / `TenantPolicy` / `BankAccountPolicy` (`routes/web.php`) :
 
 ```php
-Route::middleware(['role:admin', 'permission:view buildings'])->group(function () { ... });
-Route::middleware(['role:admin', 'permission:manage buildings'])->group(function () { ... });
-// idem pour tenants (view/manage) et pour le CRUD du compte bancaire lui-même
-// (bank-accounts.index/show/create/store/edit/update/destroy)
+Route::middleware('role:admin')->group(function () { ... }); // buildings.index/show
+Route::middleware('role:admin')->group(function () { ... }); // buildings.create/store/edit/update/destroy
+// idem pour tenants (index/show puis create/store/edit/update/destroy) et pour le CRUD
+// du compte bancaire lui-même (bank-accounts.index/show/create/store/edit/update/destroy)
 // ainsi que pour buildings.notes.store et tenants.notes.store
 ```
 
-**Choix retenu et justification** : `role:admin` a été préféré à un simple retrait des permissions `view buildings` / `view tenants` / `manage tenants` / `view bank accounts` du rôle `gestionnaire`, parce qu'il verrouille la route de façon positive et explicite (« ces pages n'appartiennent qu'à l'admin ») plutôt que négative (« le gestionnaire n'a pas la permission, pour l'instant ») : un futur ajout de permission à un rôle ne peut plus rouvrir ces pages par erreur. Ces permissions ont malgré tout été retirées du rôle `gestionnaire` dans le seeder (hygiène : elles ne servent plus à rien pour lui, ses pages dédiées ne les vérifient pas), les deux mécanismes se recoupant en défense en profondeur.
+**Choix retenu et justification** : `role:admin` a été préféré à un simple contrôle par Policy seule, parce qu'il verrouille la route de façon positive et explicite (« ces pages n'appartiennent qu'à l'admin ») plutôt que négative (« le gestionnaire n'a pas le droit, pour l'instant ») : une future évolution de la Policy ne peut plus rouvrir ces pages par erreur. Les deux mécanismes (middleware de route et Policy) se recoupent ainsi en défense en profondeur, exactement comme pour `BuildingController` (le premier contrôleur migré vers ce pattern).
 
-**Exception pour les comptes bancaires** : contrairement aux immeubles et locataires, la saisie d'écritures et les rapprochements (`bank-accounts.transactions.*`, `bank-accounts.reconciliations.*`) ne portent **pas** `role:admin` — seulement `permission:manage bank accounts`, que le gestionnaire possède à nouveau. L'ownership est vérifié au niveau du contrôleur (`BankAccountController::canManage`, `BankTransactionController`, `BankReconciliationController` — `$user->hasRole('admin') || $bankAccount->isManagedBy($user)`), pas au niveau de la route : un gestionnaire peut donc saisir une écriture ou démarrer/clôturer un rapprochement sur un compte lié à l'un de ses biens gérés, directement depuis `/mes-comptes-bancaires/{id}` (qui réutilise ces mêmes routes de traitement), mais reçoit un 403 sur un compte qu'il ne gère pas. La création/modification/suppression du compte bancaire lui-même (IBAN, gestionnaire rattaché, etc.) reste strictement admin only : il n'y a pas de bien pour établir un scope au moment de la création d'un compte, et modifier ces attributs reste jugé sensible.
+**Exception pour les comptes bancaires** : contrairement aux immeubles et locataires, la saisie d'écritures et les rapprochements (`bank-accounts.transactions.*`, `bank-accounts.reconciliations.*`) ne portent **pas** `role:admin` — seul `$this->authorize('manageTransactions', $bankAccount)` (délégué à `BankAccountPolicy::manageTransactions`) protège ces routes, ouvertes au gestionnaire. L'ownership est vérifié au niveau de cette méthode de Policy (`$user->hasRole('admin') || $bankAccount->isManagedBy($user)`), appelée depuis `BankTransactionController` et `BankReconciliationController`, pas au niveau de la route : un gestionnaire peut donc saisir une écriture ou démarrer/clôturer un rapprochement sur un compte lié à l'un de ses biens gérés, directement depuis `/mes-comptes-bancaires/{id}` (qui réutilise ces mêmes routes de traitement), mais reçoit un 403 sur un compte qu'il ne gère pas. La création/modification/suppression du compte bancaire lui-même (IBAN, gestionnaire rattaché, etc.) reste strictement admin only : il n'y a pas de bien pour établir un scope au moment de la création d'un compte, et modifier ces attributs reste jugé sensible.
 
 Les pages gestionnaire (`PortfolioController::myBuildings`/`showBuilding`, `myTenants`/`showTenant`, `myBankAccounts`/`showBankAccount`) sont routées sous le middleware `role:gestionnaire` (`routes/web.php`) et scopent systématiquement leurs requêtes aux biens gérés par l'utilisateur connecté (`whereHas('properties', fn ($q) => $q->whereHas('managers', ...))`), avec un `abort_unless(..., 403)` sur les fiches individuelles si l'entité n'est pas rattachée à un bien géré. Elles ne proposent aucun bouton créer/modifier/supprimer, ni formulaire d'ajout de note ou de pièce jointe.
 
-## Permissions Spatie déclarées
+## Policies et Gates déclarées
 
-Définies et synchronisées dans `database/seeders/DatabaseSeeder.php`.
+Chaque capacité listée ci-dessous correspondait autrefois à une permission Spatie ; elle est désormais un test de rôle (et, le cas échéant, d'ownership) codé en dur dans une méthode de Policy ou de Gate. Le tableau donne, pour chaque capacité, la classe et la méthode qui la portent.
 
-| Permission | admin | gestionnaire | locataire |
-|---|---|---|---|
-| `access admin` | ✅ | ✅ | ✅ |
-| `view buildings` | ✅ | – | – |
-| `manage buildings` | ✅ | – | – |
-| `view properties` | ✅ | ✅ | – |
-| `manage properties` | ✅ | – | – |
-| `view tenants` | ✅ | – | – |
-| `manage tenants` | ✅ | – | – |
-| `view bank accounts` | ✅ | – | – |
-| `manage bank accounts` | ✅ | ✅ (scopé : écritures/rapprochements uniquement, pas le CRUD du compte, verrouillé par `role:admin`) | – |
-| `manage invoices` | ✅ | ✅ (scopé) | – |
-| `manage notes` | ✅ | ✅ (scopé) | – |
-| `manage system` | ✅ | – | – |
-| `manage users` | ✅ | – | – |
+| Capacité (ex-permission) | admin | gestionnaire | locataire | Portée par |
+|---|---|---|---|---|
+| `access admin` | ✅ | ✅ | ✅ | `Gate::define('access-admin', ...)` (`AppServiceProvider`) |
+| `view buildings` | ✅ | – | – | `BuildingPolicy::viewAny`/`view` |
+| `manage buildings` | ✅ | – | – | `BuildingPolicy::create`/`update`/`delete` |
+| `view properties` | ✅ | ✅ | – | `PropertyPolicy::viewAny`/`view` |
+| `manage properties` | ✅ | – | – | `PropertyPolicy::create`/`update`/`delete`, `PropertyRoomPolicy::create`/`update`/`delete` |
+| `view tenants` | ✅ | – | – | `TenantPolicy::viewAny`/`view` |
+| `manage tenants` | ✅ | – | – | `TenantPolicy::create`/`update`/`delete` (le gestionnaire y accède malgré tout via l'ownership, voir `update`/`delete`) |
+| `view bank accounts` | ✅ | – | – | `BankAccountPolicy::viewAny` |
+| `manage bank accounts` | ✅ | ✅ (scopé : écritures/rapprochements uniquement, pas le CRUD du compte, verrouillé par `role:admin`) | – | `BankAccountPolicy::create`/`update`/`delete`/`manageTransactions` |
+| `manage invoices` | ✅ | ✅ (scopé) | – | `InvoicePolicy::create`/`delete` |
+| `manage notes` | ✅ | ✅ (scopé) | – | `NotePolicy::create`/`update`/`delete` |
+| `manage system` | ✅ | – | – | `Gate::define('manage-system', ...)` (`AppServiceProvider`) |
+| `manage users` | ✅ | – | – | `UserPolicy::viewAny`/`create`/`update`/`delete` |
 
-Le gestionnaire n'a donc plus aucune des permissions Spatie relatives aux immeubles, locataires et comptes bancaires : ses pages dédiées (`/mes-immeubles`, `/mes-locataires`, `/mes-comptes-bancaires`) ne les vérifient pas, elles s'appuient uniquement sur le rôle (`role:gestionnaire`) et le scope par bien géré.
+Le gestionnaire n'a donc jamais accès aux méthodes de Policy relatives aux immeubles, locataires (hors ownership) et comptes bancaires (hors `manageTransactions`) : ses pages dédiées (`/mes-immeubles`, `/mes-locataires`, `/mes-comptes-bancaires`) ne les appellent pas, elles s'appuient uniquement sur le rôle (`role:gestionnaire`) et le scope par bien géré.
 
-Ces permissions sont vérifiées à deux niveaux, qui doivent rester alignés : le middleware `permission:...` (et, pour buildings/tenants/bank-accounts, `role:admin`) sur chaque route (`routes/web.php`) et les directives Blade `@can` / `@canany` dans les vues. Les menus de la barre latérale utilisent en plus un contrôle par rôle (`@hasrole` / `@hasanyrole` dans `resources/views/layouts/admin.blade.php`) pour décider quel menu afficher — mais ce contrôle de menu, comme rappelé plus haut, n'est jamais le seul rempart : la route est toujours protégée indépendamment.
+Ces règles sont vérifiées à deux niveaux, qui doivent rester alignés : l'appel `$this->authorize(...)` dans chaque contrôleur (et, pour buildings/tenants/bank-accounts, le middleware `role:admin` en plus, sur `routes/web.php`) et les directives Blade `@can('ability', $model)` dans les vues. Les menus de la barre latérale utilisent en plus un contrôle par rôle (`@hasrole` / `@hasanyrole` dans `resources/views/layouts/admin.blade.php`) pour décider quel menu afficher — mais ce contrôle de menu, comme rappelé plus haut, n'est jamais le seul rempart : la route est toujours protégée indépendamment.
 
 ## Contrôle de propriété (gestionnaire ↔ bien)
 

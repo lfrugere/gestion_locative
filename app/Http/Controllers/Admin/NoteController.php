@@ -18,14 +18,14 @@ class NoteController extends Controller
     // (isManagedBy), qui est par construction toujours faux pour un admin.
     public function storeBuilding(Request $request, Building $building): RedirectResponse
     {
-        abort_unless($building->isManagedBy(auth()->user()), 403);
+        $this->authorize('create', [Note::class, $building]);
 
         return $this->store($request, $building, 'buildings.show');
     }
 
     public function storeProperty(Request $request, Property $property): RedirectResponse
     {
-        abort_unless($property->isManagedBy(auth()->user()), 403);
+        $this->authorize('create', [Note::class, $property]);
 
         return $this->store($request, $property, 'properties.show');
     }
@@ -33,21 +33,21 @@ class NoteController extends Controller
     public function storePropertyRoom(Request $request, Property $property, PropertyRoom $room): RedirectResponse
     {
         abort_unless($room->property_id === $property->id, 404);
-        abort_unless($property->isManagedBy(auth()->user()), 403);
+        $this->authorize('create', [Note::class, $property]);
 
         return $this->store($request, $room, 'property-rooms.show', [$property, $room]);
     }
 
     public function storeTenant(Request $request, Tenant $tenant): RedirectResponse
     {
-        abort_unless($tenant->isManagedBy(auth()->user()), 403);
+        $this->authorize('create', [Note::class, $tenant]);
 
         return $this->store($request, $tenant, 'tenants.show');
     }
 
     public function update(Request $request, Note $note): RedirectResponse
     {
-        abort_unless($this->canModify($note), 403);
+        $this->authorize('update', $note);
 
         $validated = $request->validate([
             'body' => ['required', 'string', 'max:5000'],
@@ -63,7 +63,7 @@ class NoteController extends Controller
 
     public function destroy(Note $note): RedirectResponse
     {
-        abort_unless($this->canModify($note), 403);
+        $this->authorize('delete', $note);
 
         $note->delete();
 
@@ -82,16 +82,5 @@ class NoteController extends Controller
         ]);
 
         return to_route($route, $parameters ?? $notable)->with('success', 'La note a été ajoutée.');
-    }
-
-    private function canModify(Note $note): bool
-    {
-        $user = auth()->user();
-
-        if (! $user->can('manage notes')) {
-            return false;
-        }
-
-        return $note->created_by === $user->id;
     }
 }

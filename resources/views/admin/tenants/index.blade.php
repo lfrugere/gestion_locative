@@ -5,7 +5,7 @@
 @section('content')
     <div class="admin-header">
         <div><p class="muted">Gestion locative</p><h1>Locataires</h1></div>
-        @can('manage tenants')<a class="button" href="{{ route('tenants.create') }}">Ajouter un locataire</a>@endcan
+        @can('create', \App\Models\Tenant::class)<a class="button" href="{{ route('tenants.create') }}">Ajouter un locataire</a>@endcan
     </div>
 
     <form class="list-filter" method="GET" action="{{ route('tenants.index') }}">

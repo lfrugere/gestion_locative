@@ -19,6 +19,8 @@ class PropertyController extends Controller
 {
     public function index(): View
     {
+        $this->authorize('viewAny', Property::class);
+
         return view('admin.properties.index', [
             'properties' => Property::with(['building', 'address', 'media' => fn ($query) => $query->where('kind', 'photo')->where('is_primary', true)])
                 ->orderBy('reference')
@@ -28,6 +30,8 @@ class PropertyController extends Controller
 
     public function create(): View
     {
+        $this->authorize('create', Property::class);
+
         return view('admin.properties.create', [
             'buildings' => Building::orderBy('name')->get(),
             'bankAccounts' => BankAccount::orderBy('label')->get(),
@@ -36,6 +40,8 @@ class PropertyController extends Controller
 
     public function show(Property $property): View
     {
+        $this->authorize('view', $property);
+
         return view('admin.properties.show', [
             'property' => $property->load([
                 'building.address',
@@ -56,6 +62,8 @@ class PropertyController extends Controller
 
     public function edit(Property $property): View
     {
+        $this->authorize('update', $property);
+
         return view('admin.properties.edit', [
             'property' => $property->load('address'),
             'buildings' => Building::orderBy('name')->get(),
@@ -65,16 +73,22 @@ class PropertyController extends Controller
 
     public function store(Request $request, AddressGeocoder $geocoder): RedirectResponse
     {
+        $this->authorize('create', Property::class);
+
         return $this->save($request, null, $geocoder);
     }
 
     public function update(Request $request, Property $property, AddressGeocoder $geocoder): RedirectResponse
     {
+        $this->authorize('update', $property);
+
         return $this->save($request, $property, $geocoder);
     }
 
     public function updateManagers(Request $request, Property $property): RedirectResponse
     {
+        $this->authorize('update', $property);
+
         $validated = $request->validate([
             'managers' => ['sometimes', 'array'],
             'managers.*' => ['integer', Rule::exists('users', 'id')],
@@ -87,6 +101,8 @@ class PropertyController extends Controller
 
     public function destroy(Property $property): RedirectResponse
     {
+        $this->authorize('delete', $property);
+
         DB::transaction(function () use ($property): void {
             $address = $property->address;
             $property->delete();

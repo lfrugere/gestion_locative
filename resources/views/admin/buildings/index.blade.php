@@ -8,7 +8,7 @@
             <p class="muted">Patrimoine</p>
             <h1>Immeubles</h1>
         </div>
-        @can('manage buildings')
+        @can('create', \App\Models\Building::class)
             <a class="button" href="{{ route('buildings.create') }}">Ajouter un immeuble</a>
         @endcan
     </div>
@@ -30,7 +30,7 @@
                             <td>{{ $building->address->line1 }}, {{ $building->address->postal_code }} {{ $building->address->city }}</td>
                             <td>{{ $building->properties_count }}</td>
                             <td class="actions">
-                                @can('manage buildings')
+                                @can('update', $building)
                                     <a class="icon-action" href="{{ route('buildings.edit', $building) }}" aria-label="Modifier {{ $building->name }}" data-tooltip="Modifier" title="Modifier"><span aria-hidden="true">✎</span></a>
                                     <form method="POST" action="{{ route('buildings.destroy', $building) }}" onsubmit="return confirm('Supprimer cet immeuble ?')">
                                         @csrf

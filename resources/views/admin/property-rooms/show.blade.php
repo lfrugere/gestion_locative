@@ -17,7 +17,7 @@
         @endif
         <div class="detail-hero-actions">
             <span class="status-pill {{ $room->status === 'active' ? 'status-active' : 'status-muted' }}">{{ $room->status === 'active' ? 'Active' : 'Inactive' }}</span>
-            @can('manage properties')
+            @can('update', $room)
                 <a class="button secondary" href="{{ route('property-rooms.edit', [$property, $room]) }}">Modifier</a>
             @endcan
         </div>
@@ -35,12 +35,12 @@
             </section>
 
             @unless (auth()->user()->hasRole('admin'))
-                @include('admin._media', ['media' => $room->media, 'mediable' => $room, 'managePermission' => 'manage properties', 'uploadRoute' => route('property-rooms.media.store', [$property, $room])])
+                @include('admin._media', ['media' => $room->media, 'mediable' => $room, 'canManageMedia' => false, 'uploadRoute' => route('property-rooms.media.store', [$property, $room])])
 
-                @include('admin._notes', ['notes' => $room->notes, 'managePermission' => 'manage notes', 'canManageNotes' => auth()->user()->can('manage notes') && $isPropertyManager, 'storeRoute' => route('property-rooms.notes.store', [$property, $room])])
+                @include('admin._notes', ['notes' => $room->notes, 'canManageNotes' => (auth()->user()->hasRole('admin') || auth()->user()->hasRole('gestionnaire')) && $isPropertyManager, 'storeRoute' => route('property-rooms.notes.store', [$property, $room])])
             @endunless
 
-            @can('manage properties')
+            @can('delete', $room)
                 <form class="danger-zone" method="POST" action="{{ route('property-rooms.destroy', [$property, $room]) }}" onsubmit="return confirm('Supprimer cette pièce ?')">
                     @csrf @method('DELETE')
                     <div><strong>Supprimer la pièce</strong><p>Les pièces jointes et les photos associées seront également supprimées.</p></div>

@@ -27,6 +27,8 @@ class BankAccountController extends Controller
 
     public function index(): View
     {
+        $this->authorize('viewAny', BankAccount::class);
+
         $user = auth()->user();
 
         return view('admin.bank-accounts.index', [
@@ -39,7 +41,7 @@ class BankAccountController extends Controller
 
     public function create(): View
     {
-        abort_unless(auth()->user()->hasRole('admin'), 403);
+        $this->authorize('create', BankAccount::class);
 
         return view('admin.bank-accounts.create', [
             'managers' => $this->managers(),
@@ -49,7 +51,7 @@ class BankAccountController extends Controller
 
     public function show(Request $request, BankAccount $bankAccount): View
     {
-        abort_unless($this->canManage($bankAccount), 403);
+        $this->authorize('view', $bankAccount);
 
         $bankAccount->load(['manager', 'reconciliations.createdBy']);
 
@@ -83,7 +85,7 @@ class BankAccountController extends Controller
 
     public function edit(BankAccount $bankAccount): View
     {
-        abort_unless($this->canManage($bankAccount), 403);
+        $this->authorize('update', $bankAccount);
 
         return view('admin.bank-accounts.edit', [
             'bankAccount' => $bankAccount,
@@ -94,21 +96,21 @@ class BankAccountController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->hasRole('admin'), 403);
+        $this->authorize('create', BankAccount::class);
 
         return $this->save($request, null);
     }
 
     public function update(Request $request, BankAccount $bankAccount): RedirectResponse
     {
-        abort_unless($this->canManage($bankAccount), 403);
+        $this->authorize('update', $bankAccount);
 
         return $this->save($request, $bankAccount);
     }
 
     public function destroy(BankAccount $bankAccount): RedirectResponse
     {
-        abort_unless($this->canManage($bankAccount), 403);
+        $this->authorize('delete', $bankAccount);
 
         if ($bankAccount->transactions()->exists()) {
             return to_route('bank-accounts.index')

@@ -44,7 +44,7 @@ class AdminBackOfficeTest extends TestCase
     public function test_admin_can_access_the_back_office(): void
     {
         $admin = $this->admin();
-        $this->assertTrue($admin->can('access admin'));
+        $this->assertTrue($admin->can('access-admin'));
 
         $this->actingAs($admin)
             ->get('/admin-locative')

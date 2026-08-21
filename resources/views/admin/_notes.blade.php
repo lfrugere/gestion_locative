@@ -1,4 +1,4 @@
-@php($canManageNotes = $canManageNotes ?? auth()->user()->can($managePermission))
+@php($canManageNotes = $canManageNotes ?? false)
 
 <section class="card media-card">
     <div class="media-card-header">

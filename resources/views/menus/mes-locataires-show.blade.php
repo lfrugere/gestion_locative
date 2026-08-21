@@ -55,9 +55,9 @@
                 @endif
             </section>
 
-            @include('admin._media', ['media' => $tenant->media, 'mediable' => $tenant, 'managePermission' => 'manage tenants', 'canManageMedia' => false, 'uploadRoute' => '#', 'singlePhoto' => true])
+            @include('admin._media', ['media' => $tenant->media, 'mediable' => $tenant, 'canManageMedia' => false, 'uploadRoute' => '#', 'singlePhoto' => true])
 
-            @include('admin._notes', ['notes' => $tenant->notes, 'managePermission' => 'manage notes', 'canManageNotes' => false, 'storeRoute' => '#'])
+            @include('admin._notes', ['notes' => $tenant->notes, 'canManageNotes' => false, 'storeRoute' => '#'])
         </div>
     </div>
 @endsection

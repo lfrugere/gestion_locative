@@ -181,7 +181,6 @@ class MediaControllerTest extends TestCase
         $media = $this->createPhoto($building);
 
         $user = User::factory()->create();
-        $user->givePermissionTo('access admin');
 
         $this->actingAs($user)
             ->get(route('media.download', $media))

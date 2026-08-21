@@ -20,15 +20,14 @@ class MediaController extends Controller
 {
     public function storeBuilding(Request $request, Building $building, MediaManager $manager): RedirectResponse
     {
-        // Le rôle admin n'a plus accès aux médias, sur aucune entité (cf. docs/roles-permissions.md).
-        abort_if(auth()->user()->hasRole('admin'), 403);
+        $this->authorize('createForBuilding', Media::class);
 
         return $this->store($request, $building, $manager, 'buildings.show');
     }
 
     public function storeProperty(Request $request, Property $property, MediaManager $manager): RedirectResponse
     {
-        abort_unless($property->isManagedBy(auth()->user()), 403);
+        $this->authorize('createForProperty', [Media::class, $property]);
 
         return $this->store($request, $property, $manager, 'properties.show');
     }
@@ -36,15 +35,14 @@ class MediaController extends Controller
     public function storePropertyRoom(Request $request, Property $property, PropertyRoom $room, MediaManager $manager): RedirectResponse
     {
         abort_unless($room->property_id === $property->id, 404);
-        // Le rôle admin n'a plus accès aux médias, sur aucune entité (cf. docs/roles-permissions.md).
-        abort_if(auth()->user()->hasRole('admin'), 403);
+        $this->authorize('createForPropertyRoom', Media::class);
 
         return $this->store($request, $room, $manager, 'property-rooms.show', [$property, $room]);
     }
 
     public function storeTenant(Request $request, Tenant $tenant, MediaManager $manager): RedirectResponse
     {
-        abort_unless($this->canManageTenant($tenant), 403);
+        $this->authorize('createForTenant', [Media::class, $tenant]);
 
         if ($request->string('kind')->toString() === Media::KIND_PHOTO
             && $tenant->media()->where('kind', Media::KIND_PHOTO)->exists()) {
@@ -59,7 +57,7 @@ class MediaController extends Controller
     public function storeInvoice(Request $request, Property $property, Invoice $invoice, MediaManager $manager): RedirectResponse
     {
         abort_unless($invoice->property_id === $property->id, 404);
-        abort_unless($property->isManagedBy(auth()->user()), 403);
+        $this->authorize('createForInvoice', [Media::class, $property]);
 
         $validated = $request->validate([
             'file' => ['required', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx'],
@@ -72,7 +70,7 @@ class MediaController extends Controller
 
     public function update(Request $request, Media $media, MediaManager $manager): RedirectResponse
     {
-        abort_unless($this->canManage($media), 403);
+        $this->authorize('update', $media);
 
         $validated = $request->validate([
             'type' => ['required', Rule::in($media->isPhoto()
@@ -89,7 +87,8 @@ class MediaController extends Controller
 
     public function setPrimary(Media $media, MediaManager $manager): RedirectResponse
     {
-        abort_unless($media->isPhoto() && $this->canManage($media), 403);
+        abort_unless($media->isPhoto(), 403);
+        $this->authorize('update', $media);
         $manager->setPrimary($media);
 
         return back()->with('success', 'La photo principale a été définie.');
@@ -97,7 +96,7 @@ class MediaController extends Controller
 
     public function destroy(Media $media, MediaManager $manager): RedirectResponse
     {
-        abort_unless($this->canManage($media), 403);
+        $this->authorize('update', $media);
         $manager->delete($media);
 
         return back()->with('success', 'Le fichier a été supprimé.');
@@ -105,7 +104,7 @@ class MediaController extends Controller
 
     public function download(Media $media): StreamedResponse
     {
-        abort_unless($this->canView($media), 403);
+        $this->authorize('view', $media);
 
         return Storage::disk($media->disk)->download($media->path, $media->display_name);
     }
@@ -137,69 +136,4 @@ class MediaController extends Controller
         return to_route($route, $parameters ?? $mediable)->with('success', 'Le fichier a été ajouté.');
     }
 
-    // Le rôle admin n'a plus accès aux médias, sur aucune entité, en lecture comme en
-    // écriture (cf. docs/roles-permissions.md) : canView/canManage l'excluent explicitement
-    // plutôt que de s'appuyer sur les seuls contrôles d'ownership ci-dessous.
-    private function canView(Media $media): bool
-    {
-        $user = auth()->user();
-
-        if ($user->hasRole('admin')) {
-            return false;
-        }
-
-        return match ($media->mediable_type) {
-            Building::class => $media->mediable->isManagedBy($user),
-            Property::class => $user->can('view properties'),
-            PropertyRoom::class => $user->can('view properties'),
-            Tenant::class => $media->mediable->isManagedBy($user),
-            Invoice::class => $this->canManageInvoice($media),
-            default => false,
-        };
-    }
-
-    private function canManage(Media $media): bool
-    {
-        if (auth()->user()->hasRole('admin')) {
-            return false;
-        }
-
-        return match ($media->mediable_type) {
-            Building::class => auth()->user()->can('manage buildings'),
-            Property::class => $this->canManageProperty($media->mediable),
-            PropertyRoom::class => auth()->user()->can('manage properties'),
-            Tenant::class => $this->canManageTenant($media->mediable),
-            Invoice::class => $this->canManageInvoice($media),
-            default => false,
-        };
-    }
-
-    private function canManageProperty(Property $property): bool
-    {
-        if (auth()->user()->hasRole('admin') || ! auth()->user()->can('view properties')) {
-            return false;
-        }
-
-        return $property->isManagedBy(auth()->user());
-    }
-
-    private function canManageTenant(Tenant $tenant): bool
-    {
-        if (auth()->user()->hasRole('admin') || ! auth()->user()->can('manage tenants')) {
-            return false;
-        }
-
-        return $tenant->isManagedBy(auth()->user());
-    }
-
-    private function canManageInvoice(Media $media): bool
-    {
-        if (auth()->user()->hasRole('admin') || ! auth()->user()->can('manage invoices')) {
-            return false;
-        }
-
-        $property = $media->mediable->property;
-
-        return $property->isManagedBy(auth()->user());
-    }
 }

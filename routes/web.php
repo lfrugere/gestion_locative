@@ -22,10 +22,10 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
-Route::middleware(['auth', 'permission:access admin'])
+Route::middleware(['auth', 'can:access-admin'])
     ->group(function () {
         Route::get('/portal', function () {
-            return auth()->user()->can('view properties')
+            return auth()->user()->can('viewAny', \App\Models\Property::class)
                 ? redirect()->route('admin-locative')
                 : redirect()->route('gestion-locative');
         })->name('portal');
@@ -36,16 +36,14 @@ Route::middleware(['auth', 'permission:access admin'])
         Route::view('/gestion-locative', 'menus.gestion-locative')->name('gestion-locative');
         Route::view('/mes-contrats', 'menus.mes-contrats')->name('mes-contrats');
         Route::view('/administrations', 'menus.administrations')
-            ->middleware('permission:manage system|manage users')
+            ->middleware('can:manage-system')
             ->name('administrations');
 
-        Route::middleware('permission:view properties')->group(function () {
-            Route::get('/mes-biens', [PortfolioController::class, 'myProperties'])->name('mes-biens');
-            Route::get('/mes-biens/{property}', [PortfolioController::class, 'showProperty'])
-                ->whereNumber('property')
-                ->name('mes-biens.show');
-            Route::get('/admin-locative', DashboardController::class)->name('admin-locative');
-        });
+        Route::get('/mes-biens', [PortfolioController::class, 'myProperties'])->name('mes-biens');
+        Route::get('/mes-biens/{property}', [PortfolioController::class, 'showProperty'])
+            ->whereNumber('property')
+            ->name('mes-biens.show');
+        Route::get('/admin-locative', DashboardController::class)->name('admin-locative');
 
         // Pages dédiées "Gestion Locative", réservées au rôle gestionnaire : lecture
         // seule, scopées aux biens gérés par l'utilisateur connecté. Elles remplacent,
@@ -67,14 +65,14 @@ Route::middleware(['auth', 'permission:access admin'])
                 ->name('mes-comptes-bancaires.show');
         });
 
-        Route::middleware('permission:manage system')->get('/configuration', SystemCheckController::class)
+        Route::middleware('can:manage-system')->get('/configuration', SystemCheckController::class)
             ->name('system-checks.index');
 
         // Les pages admin /buildings, /tenants et /bank-accounts (listes, fiches et
         // toute la gestion CRUD) sont désormais strictement réservées au rôle admin :
         // le gestionnaire consulte ses immeubles/locataires/comptes bancaires via les
         // pages dédiées ci-dessus (/mes-immeubles, /mes-locataires, /mes-comptes-bancaires).
-        Route::middleware(['role:admin', 'permission:view buildings'])->group(function () {
+        Route::middleware('role:admin')->group(function () {
             Route::get('/buildings', [BuildingController::class, 'index'])
                 ->name('buildings.index');
             Route::get('/buildings/{building}', [BuildingController::class, 'show'])
@@ -82,7 +80,7 @@ Route::middleware(['auth', 'permission:access admin'])
                 ->name('buildings.show');
         });
 
-        Route::middleware(['role:admin', 'permission:manage buildings'])->group(function () {
+        Route::middleware('role:admin')->group(function () {
             Route::get('/buildings/create', [BuildingController::class, 'create'])
                 ->name('buildings.create');
             Route::post('/buildings', [BuildingController::class, 'store'])
@@ -101,7 +99,7 @@ Route::middleware(['auth', 'permission:access admin'])
                 ->name('buildings.media.store');
         });
 
-        Route::middleware(['role:admin', 'permission:view bank accounts'])->group(function () {
+        Route::middleware('role:admin')->group(function () {
             Route::get('/bank-accounts', [BankAccountController::class, 'index'])
                 ->name('bank-accounts.index');
             Route::get('/bank-accounts/{bankAccount}', [BankAccountController::class, 'show'])
@@ -112,7 +110,7 @@ Route::middleware(['auth', 'permission:access admin'])
         // Création / modification / suppression du compte bancaire lui-même (IBAN, gestionnaire
         // rattaché, etc.) : réservé à l'admin. Un gestionnaire ne peut pas créer de compte ex
         // nihilo (aucun bien n'existe encore pour établir le scope) ni modifier ses attributs.
-        Route::middleware(['role:admin', 'permission:manage bank accounts'])->group(function () {
+        Route::middleware('role:admin')->group(function () {
             Route::get('/bank-accounts/create', [BankAccountController::class, 'create'])
                 ->name('bank-accounts.create');
             Route::post('/bank-accounts', [BankAccountController::class, 'store'])
@@ -132,7 +130,7 @@ Route::middleware(['auth', 'permission:access admin'])
         // ownership (BankAccountController::canManage / BankAccount::isManagedBy) au niveau
         // du contrôleur — pas de verrou de rôle ici, contrairement au reste des pages
         // "Admin Locative" (/bank-accounts en listing/édition reste admin only ci-dessus).
-        Route::middleware('permission:manage bank accounts')->group(function () {
+        Route::group([], function () {
             Route::post('/bank-accounts/{bankAccount}/transactions', [BankTransactionController::class, 'store'])
                 ->whereNumber('bankAccount')
                 ->name('bank-accounts.transactions.store');
@@ -160,7 +158,7 @@ Route::middleware(['auth', 'permission:access admin'])
                 ->name('bank-accounts.reconciliations.destroy');
         });
 
-        Route::middleware('permission:view properties')->group(function () {
+        Route::group([], function () {
             Route::get('/properties', [PropertyController::class, 'index'])
                 ->name('properties.index');
             Route::get('/properties/{property}', [PropertyController::class, 'show'])
@@ -174,7 +172,7 @@ Route::middleware(['auth', 'permission:access admin'])
                 ->name('properties.media.store');
         });
 
-        Route::middleware('permission:manage properties')->group(function () {
+        Route::group([], function () {
             Route::get('/properties/create', [PropertyController::class, 'create'])
                 ->name('properties.create');
             Route::post('/properties', [PropertyController::class, 'store'])
@@ -211,7 +209,7 @@ Route::middleware(['auth', 'permission:access admin'])
                 ->name('property-rooms.media.store');
         });
 
-        Route::middleware('permission:manage invoices')->group(function () {
+        Route::group([], function () {
             Route::post('/properties/{property}/invoices', [InvoiceController::class, 'store'])
                 ->whereNumber('property')
                 ->name('properties.invoices.store');
@@ -223,14 +221,14 @@ Route::middleware(['auth', 'permission:access admin'])
                 ->name('properties.invoices.media.store');
         });
 
-        Route::middleware(['role:admin', 'permission:view tenants'])->group(function () {
+        Route::middleware('role:admin')->group(function () {
             Route::get('/tenants', [TenantController::class, 'index'])->name('tenants.index');
             Route::get('/tenants/{tenant}', [TenantController::class, 'show'])
                 ->whereNumber('tenant')
                 ->name('tenants.show');
         });
 
-        Route::middleware(['role:admin', 'permission:manage tenants'])->group(function () {
+        Route::middleware('role:admin')->group(function () {
             Route::get('/tenants/create', [TenantController::class, 'create'])->name('tenants.create');
             Route::post('/tenants', [TenantController::class, 'store'])->name('tenants.store');
             Route::get('/tenants/{tenant}/edit', [TenantController::class, 'edit'])
@@ -247,13 +245,13 @@ Route::middleware(['auth', 'permission:access admin'])
                 ->name('tenants.media.store');
         });
 
-        Route::middleware('permission:manage buildings|manage properties|manage tenants|view properties')->group(function () {
+        Route::group([], function () {
             Route::put('/media/{media}', [MediaController::class, 'update'])->name('media.update');
             Route::post('/media/{media}/primary', [MediaController::class, 'setPrimary'])->name('media.primary');
             Route::delete('/media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
         });
 
-        Route::middleware('permission:manage notes')->group(function () {
+        Route::group([], function () {
             Route::post('/properties/{property}/notes', [NoteController::class, 'storeProperty'])
                 ->whereNumber('property')
                 ->name('properties.notes.store');
@@ -267,7 +265,7 @@ Route::middleware(['auth', 'permission:access admin'])
         // L'ajout de note sur un immeuble ou un locataire reste réservé à l'admin : les
         // nouvelles pages "gestionnaire" (/mes-immeubles, /mes-locataires) sont en
         // lecture seule et ne proposent plus ce formulaire.
-        Route::middleware(['role:admin', 'permission:manage notes'])->group(function () {
+        Route::middleware('role:admin')->group(function () {
             Route::post('/buildings/{building}/notes', [NoteController::class, 'storeBuilding'])
                 ->whereNumber('building')
                 ->name('buildings.notes.store');
@@ -276,7 +274,7 @@ Route::middleware(['auth', 'permission:access admin'])
                 ->name('tenants.notes.store');
         });
 
-        Route::middleware('permission:manage users')->group(function () {
+        Route::group([], function () {
             Route::get('/users', [UserController::class, 'index'])->name('users.index');
             Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
             Route::post('/users', [UserController::class, 'store'])->name('users.store');

@@ -16,6 +16,8 @@ class TenantController extends Controller
 {
     public function index(Request $request): View
     {
+        $this->authorize('viewAny', Tenant::class);
+
         $status = $request->string('status', Tenant::STATUS_ACTIVE)->toString();
 
         abort_unless(array_key_exists($status, Tenant::STATUS_LABELS), 404);
@@ -30,6 +32,8 @@ class TenantController extends Controller
 
     public function create(): View
     {
+        $this->authorize('create', Tenant::class);
+
         return view('admin.tenants.create', [
             'availableProperties' => $this->availableProperties(auth()->user()),
         ]);
@@ -37,6 +41,8 @@ class TenantController extends Controller
 
     public function show(Tenant $tenant): View
     {
+        $this->authorize('view', $tenant);
+
         $user = auth()->user();
 
         return view('admin.tenants.show', [
@@ -49,7 +55,7 @@ class TenantController extends Controller
     {
         $user = auth()->user();
 
-        abort_unless($user->hasRole('admin') || $tenant->isManagedBy($user), 403);
+        $this->authorize('update', $tenant);
 
         return view('admin.tenants.edit', [
             'tenant' => $tenant->load('properties'),
@@ -59,23 +65,21 @@ class TenantController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $this->authorize('create', Tenant::class);
+
         return $this->save($request);
     }
 
     public function update(Request $request, Tenant $tenant): RedirectResponse
     {
-        $user = auth()->user();
-
-        abort_unless($user->hasRole('admin') || $tenant->isManagedBy($user), 403);
+        $this->authorize('update', $tenant);
 
         return $this->save($request, $tenant);
     }
 
     public function destroy(Tenant $tenant, MediaManager $manager): RedirectResponse
     {
-        $user = auth()->user();
-
-        abort_unless($user->hasRole('admin') || $tenant->isManagedBy($user), 403);
+        $this->authorize('delete', $tenant);
 
         $tenant->load('media');
 

@@ -11,7 +11,7 @@
     </div>
 
     <div class="quick-links">
-        @can('view properties')
+        @can('viewAny', \App\Models\Property::class)
             <a href="{{ route('mes-biens') }}"><span class="entity-mark">B</span><span><strong>Mes biens</strong><small>Les biens qui vous sont mis en gestion.</small></span><span class="row-arrow">→</span></a>
         @endcan
         @hasrole('gestionnaire')

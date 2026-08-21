@@ -11,10 +11,10 @@
     </div>
 
     <div class="quick-links">
-        @can('manage system')
+        @can('manage-system')
             <a href="{{ route('system-checks.index') }}"><span class="entity-mark">C</span><span><strong>Configuration</strong><small>Vérifications système.</small></span><span class="row-arrow">→</span></a>
         @endcan
-        @can('manage users')
+        @can('viewAny', \App\Models\User::class)
             <a href="{{ route('users.index') }}"><span class="entity-mark">U</span><span><strong>Utilisateurs</strong><small>Gestion des comptes et des rôles.</small></span><span class="row-arrow">→</span></a>
         @endcan
     </div>

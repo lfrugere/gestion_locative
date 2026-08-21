@@ -16,6 +16,8 @@ class BuildingController extends Controller
 {
     public function index(): View
     {
+        $this->authorize('viewAny', Building::class);
+
         $user = auth()->user();
 
         return view('admin.buildings.index', [
@@ -29,14 +31,16 @@ class BuildingController extends Controller
 
     public function create(): View
     {
+        $this->authorize('create', Building::class);
+
         return view('admin.buildings.create');
     }
 
     public function show(Building $building): View
     {
-        $user = auth()->user();
+        $this->authorize('view', $building);
 
-        abort_unless($user->hasRole('admin') || $building->isManagedBy($user), 403);
+        $user = auth()->user();
 
         return view('admin.buildings.show', [
             'building' => $building->load(['address', 'properties', 'media.tags', 'notes.author', 'notes.editor']),
@@ -46,6 +50,8 @@ class BuildingController extends Controller
 
     public function edit(Building $building): View
     {
+        $this->authorize('update', $building);
+
         return view('admin.buildings.edit', [
             'building' => $building->load('address'),
         ]);
@@ -53,16 +59,22 @@ class BuildingController extends Controller
 
     public function store(Request $request, AddressGeocoder $geocoder): RedirectResponse
     {
+        $this->authorize('create', Building::class);
+
         return $this->save($request, null, $geocoder);
     }
 
     public function update(Request $request, Building $building, AddressGeocoder $geocoder): RedirectResponse
     {
+        $this->authorize('update', $building);
+
         return $this->save($request, $building, $geocoder);
     }
 
     public function destroy(Building $building): RedirectResponse
     {
+        $this->authorize('delete', $building);
+
         if ($building->properties()->exists()) {
             return to_route('buildings.index')
                 ->with('error', 'Impossible de supprimer un immeuble auquel des biens sont rattachés.');

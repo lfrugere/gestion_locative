@@ -13,6 +13,8 @@ class PortfolioController extends Controller
 {
     public function myProperties(): View
     {
+        $this->authorize('viewAny', Property::class);
+
         $user = auth()->user();
 
         $properties = $user->hasRole('admin')

@@ -50,9 +50,9 @@
             </section>
 
             @unless (auth()->user()->hasRole('admin'))
-                @include('admin._media', ['media' => $tenant->media, 'mediable' => $tenant, 'managePermission' => 'manage tenants', 'canManageMedia' => $isTenantManager, 'uploadRoute' => route('tenants.media.store', $tenant), 'singlePhoto' => true])
+                @include('admin._media', ['media' => $tenant->media, 'mediable' => $tenant, 'canManageMedia' => $isTenantManager, 'uploadRoute' => route('tenants.media.store', $tenant), 'singlePhoto' => true])
 
-                @include('admin._notes', ['notes' => $tenant->notes, 'managePermission' => 'manage notes', 'canManageNotes' => auth()->user()->can('manage notes') && $isTenantManager, 'storeRoute' => route('tenants.notes.store', $tenant)])
+                @include('admin._notes', ['notes' => $tenant->notes, 'canManageNotes' => (auth()->user()->hasRole('admin') || auth()->user()->hasRole('gestionnaire')) && $isTenantManager, 'storeRoute' => route('tenants.notes.store', $tenant)])
             @endunless
 
             @if ($isTenantManager)

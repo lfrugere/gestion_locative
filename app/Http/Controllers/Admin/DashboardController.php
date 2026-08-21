@@ -13,6 +13,8 @@ class DashboardController extends Controller
 {
     public function __invoke(): View
     {
+        $this->authorize('viewAny', Property::class);
+
         return view('admin.dashboard', [
             'statistics' => [
                 'buildings' => Building::count(),

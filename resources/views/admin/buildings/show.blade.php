@@ -17,7 +17,7 @@
         @endif
         <div class="detail-hero-actions">
             <span class="status-pill status-active">{{ $building->properties->count() }} bien{{ $building->properties->count() > 1 ? 's' : '' }}</span>
-            @can('manage buildings')
+            @can('update', $building)
                 <a class="button secondary" href="{{ route('buildings.edit', $building) }}">Modifier</a>
             @endcan
         </div>
@@ -49,12 +49,12 @@
             </section>
 
             @unless (auth()->user()->hasRole('admin'))
-                @include('admin._media', ['media' => $building->media, 'mediable' => $building, 'managePermission' => 'manage buildings', 'uploadRoute' => route('buildings.media.store', $building)])
+                @include('admin._media', ['media' => $building->media, 'mediable' => $building, 'canManageMedia' => false, 'uploadRoute' => route('buildings.media.store', $building)])
 
-                @include('admin._notes', ['notes' => $building->notes, 'managePermission' => 'manage notes', 'canManageNotes' => auth()->user()->can('manage notes') && $isBuildingManager, 'storeRoute' => route('buildings.notes.store', $building)])
+                @include('admin._notes', ['notes' => $building->notes, 'canManageNotes' => (auth()->user()->hasRole('admin') || auth()->user()->hasRole('gestionnaire')) && $isBuildingManager, 'storeRoute' => route('buildings.notes.store', $building)])
             @endunless
 
-            @can('manage buildings')
+            @can('delete', $building)
                 <form class="danger-zone" method="POST" action="{{ route('buildings.destroy', $building) }}" onsubmit="return confirm('Supprimer cet immeuble ?')">
                     @csrf @method('DELETE')
                     <div><strong>Supprimer l’immeuble</strong><p>Cette action est possible uniquement lorsqu’aucun bien n’est rattaché.</p></div>

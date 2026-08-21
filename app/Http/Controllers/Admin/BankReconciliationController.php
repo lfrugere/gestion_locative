@@ -15,7 +15,7 @@ class BankReconciliationController extends Controller
 {
     public function create(BankAccount $bankAccount): View
     {
-        abort_unless($this->canManage($bankAccount), 403);
+        $this->authorize('manageTransactions', $bankAccount);
 
         $lastClosed = $this->lastClosedReconciliation($bankAccount);
         $isFirstReconciliation = $lastClosed === null;
@@ -31,7 +31,7 @@ class BankReconciliationController extends Controller
 
     public function store(Request $request, BankAccount $bankAccount): RedirectResponse
     {
-        abort_unless($this->canManage($bankAccount), 403);
+        $this->authorize('manageTransactions', $bankAccount);
 
         if ($bankAccount->reconciliations()->whereNull('closed_at')->exists()) {
             return to_route($this->showRouteName(), $bankAccount)
@@ -141,7 +141,7 @@ class BankReconciliationController extends Controller
 
     private function authorizeReconciliation(BankAccount $bankAccount, BankReconciliation $reconciliation): void
     {
-        abort_unless($this->canManage($bankAccount), 403);
+        $this->authorize('manageTransactions', $bankAccount);
 
         if ($reconciliation->bank_account_id !== $bankAccount->id) {
             abort(404);
@@ -150,13 +150,6 @@ class BankReconciliationController extends Controller
         if ($reconciliation->isClosed()) {
             abort(403);
         }
-    }
-
-    private function canManage(BankAccount $bankAccount): bool
-    {
-        $user = auth()->user();
-
-        return $user->hasRole('admin') || $bankAccount->isManagedBy($user);
     }
 
     private function showRouteName(): string

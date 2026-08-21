@@ -269,7 +269,7 @@
                         </a>
                         @if ($gestionLocativeActive)
                             <div class="nav-submenu">
-                                @can('view properties')
+                                @can('viewAny', \App\Models\Property::class)
                                     <a href="{{ route('mes-biens') }}">Mes biens</a>
                                 @endcan
                                 @hasrole('gestionnaire')
@@ -289,38 +289,38 @@
                         </a>
                         @if ($adminLocativeActive)
                             <div class="nav-submenu">
-                                @can('view buildings')
+                                @can('viewAny', \App\Models\Building::class)
                                     <a href="{{ route('buildings.index') }}">Immeubles</a>
                                 @endcan
-                                @can('view properties')
+                                @can('viewAny', \App\Models\Property::class)
                                     <a href="{{ route('properties.index') }}">Biens</a>
                                 @endcan
-                                @can('view tenants')
+                                @can('viewAny', \App\Models\Tenant::class)
                                     <a href="{{ route('tenants.index') }}">Locataires</a>
                                 @endcan
-                                @can('view bank accounts')
+                                @can('viewAny', \App\Models\BankAccount::class)
                                     <a href="{{ route('bank-accounts.index') }}">Comptes Bancaires</a>
                                 @endcan
                             </div>
                         @endif
                     @endhasrole
 
-                    @canany(['manage system', 'manage users'])
+                    @if (auth()->user()->can('manage-system') || auth()->user()->can('viewAny', \App\Models\User::class))
                     <a class="nav-group-header {{ $administrationsActive ? 'active' : '' }}" href="{{ route('administrations') }}">
                         <span>Admin Général</span>
                         <span class="chevron">{{ $administrationsActive ? '⌃' : '⌄' }}</span>
                     </a>
                     @if ($administrationsActive)
                         <div class="nav-submenu">
-                            @can('manage system')
+                            @can('manage-system')
                                 <a href="{{ route('system-checks.index') }}">Configuration</a>
                             @endcan
-                            @can('manage users')
+                            @can('viewAny', \App\Models\User::class)
                                 <a href="{{ route('users.index') }}">Utilisateurs</a>
                             @endcan
                         </div>
                     @endif
-                    @endcanany
+                    @endif
                 </nav>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

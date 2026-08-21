@@ -10,13 +10,13 @@
             <p class="dashboard-lead">Un aperçu de votre patrimoine et des prochaines actions utiles.</p>
         </div>
         <div class="dashboard-actions">
-            @can('manage buildings')
+            @can('create', \App\Models\Building::class)
                 <a class="button secondary" href="{{ route('buildings.create') }}">Ajouter un immeuble</a>
             @endcan
-            @can('manage properties')
+            @can('create', \App\Models\Property::class)
                 <a class="button" href="{{ route('properties.create') }}">Ajouter un bien</a>
             @endcan
-            @can('manage tenants')
+            @can('create', \App\Models\Tenant::class)
                 <a class="button secondary" href="{{ route('tenants.create') }}">Ajouter un locataire</a>
             @endcan
         </div>
@@ -27,13 +27,13 @@
         <a class="dashboard-metric" href="{{ route('properties.index') }}"><span>Biens</span><strong>{{ $statistics['properties'] }}</strong><small>{{ $statistics['activeProperties'] }} actif{{ $statistics['activeProperties'] > 1 ? 's' : '' }}</small></a>
         <a class="dashboard-metric" href="{{ route('properties.index') }}"><span>Appartements</span><strong>{{ $statistics['apartments'] }}</strong><small>Dans le parc</small></a>
         <a class="dashboard-metric" href="{{ route('properties.index') }}"><span>Maisons / parkings</span><strong>{{ $statistics['houses'] + $statistics['parkings'] }}</strong><small>{{ $statistics['houses'] }} maison{{ $statistics['houses'] > 1 ? 's' : '' }} · {{ $statistics['parkings'] }} parking{{ $statistics['parkings'] > 1 ? 's' : '' }}</small></a>
-        @can('view tenants')
+        @can('viewAny', \App\Models\Tenant::class)
             <a class="dashboard-metric" href="{{ route('tenants.index') }}"><span>Locataires</span><strong>{{ $statistics['tenants'] }}</strong><small>Consulter les dossiers</small></a>
         @endcan
     </section>
 
     <div class="dashboard-grid">
-        @canany(['manage buildings', 'manage properties'])
+        @if (auth()->user()->can('create', \App\Models\Building::class) || auth()->user()->can('create', \App\Models\Property::class))
             <section class="detail-panel dashboard-panel">
                 <div class="panel-heading"><div><span class="panel-kicker">À compléter</span><h2>Points d’attention</h2></div><span class="panel-icon">✓</span></div>
                 <div class="attention-list">
@@ -42,14 +42,14 @@
                     <a href="{{ route('buildings.index') }}"><span class="attention-count">{{ $attention['addressesWithoutCoordinates'] }}</span><span><strong>adresse{{ $attention['addressesWithoutCoordinates'] > 1 ? 's' : '' }} non géocodée{{ $attention['addressesWithoutCoordinates'] > 1 ? 's' : '' }}</strong><small>La carte sera disponible une fois les coordonnées enregistrées.</small></span><span class="row-arrow">→</span></a>
                 </div>
             </section>
-        @endcanany
+        @endif
 
         <section class="detail-panel dashboard-panel">
             <div class="panel-heading"><div><span class="panel-kicker">Accès rapide</span><h2>Consulter le patrimoine</h2></div><span class="panel-icon">↗</span></div>
             <div class="quick-links">
                 <a href="{{ route('buildings.index') }}"><span class="entity-mark">I</span><span><strong>Immeubles</strong><small>Consulter les bâtiments et laisser des notes.</small></span><span class="row-arrow">→</span></a>
                 <a href="{{ route('properties.index') }}"><span class="entity-mark">B</span><span><strong>Biens immobiliers</strong><small>Appartements, maisons et parkings.</small></span><span class="row-arrow">→</span></a>
-                @can('view tenants')
+                @can('viewAny', \App\Models\Tenant::class)
                     <a href="{{ route('tenants.index') }}"><span class="entity-mark">L</span><span><strong>Locataires</strong><small>Consulter les dossiers locataires.</small></span><span class="row-arrow">→</span></a>
                 @endcan
             </div>
@@ -91,7 +91,7 @@
             @endforelse
         </section>
 
-        @can('view tenants')
+        @can('viewAny', \App\Models\Tenant::class)
             <section class="detail-panel dashboard-panel">
                 <div class="panel-heading"><div><span class="panel-kicker">Derniers ajouts</span><h2>Locataires récents</h2></div><a class="panel-link" href="{{ route('tenants.index') }}">Tous les locataires</a></div>
                 @forelse ($recentTenants as $tenant)

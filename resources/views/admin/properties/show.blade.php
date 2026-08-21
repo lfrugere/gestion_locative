@@ -22,7 +22,7 @@
                 <span class="status-pill status-active">Colocation</span>
             @endif
             <span class="status-pill {{ $property->status === 'active' ? 'status-active' : 'status-muted' }}">{{ $property->status === 'active' ? 'Actif' : 'Inactif' }}</span>
-            @can('manage properties')
+            @can('update', $property)
                 <a class="button secondary" href="{{ route('properties.edit', $property) }}">Modifier</a>
             @endcan
         </div>
@@ -50,7 +50,7 @@
                 @endif
             </section>
 
-            @if (auth()->user()->can('manage properties') || $isPropertyManager)
+            @if (auth()->user()->can('update', $property) || $isPropertyManager)
                 <section class="detail-panel">
                     <div class="panel-heading"><div><span class="panel-kicker">Rattachement</span><h2>Compte bancaire</h2></div><span class="panel-icon">🏦</span></div>
                     @if ($property->bankAccount)
@@ -61,7 +61,7 @@
                 </section>
             @endif
 
-            @if (! auth()->user()->hasRole('admin') && auth()->user()->can('manage invoices') && $isPropertyManager)
+            @if (! auth()->user()->hasRole('admin') && auth()->user()->hasRole('gestionnaire') && $isPropertyManager)
                 <section class="detail-panel associated-panel">
                     <div class="panel-heading"><div><span class="panel-kicker">Charges</span><h2>Factures</h2></div><span class="count-badge">{{ $property->invoices->count() }}</span></div>
 
@@ -149,7 +149,7 @@
                 </section>
             @endif
 
-            @can('manage properties')
+            @can('update', $property)
                 <section class="detail-panel">
                     <div class="panel-heading"><div><span class="panel-kicker">Attribution</span><h2>Mise en gestion</h2></div><span class="panel-icon">👤</span></div>
                     @if ($managers->isEmpty())
@@ -173,7 +173,7 @@
                 <section class="detail-panel">
                     <div class="panel-heading">
                         <div><span class="panel-kicker">Colocation</span><h2>Pièces</h2></div>
-                        @can('manage properties')
+                        @can('create', \App\Models\PropertyRoom::class)
                             <a class="button secondary" href="{{ route('property-rooms.create', $property) }}">Ajouter une pièce</a>
                         @endcan
                     </div>
@@ -196,12 +196,12 @@
             @endif
 
             @unless (auth()->user()->hasRole('admin'))
-                @include('admin._media', ['media' => $property->media, 'mediable' => $property, 'managePermission' => 'manage properties', 'canManageMedia' => $isPropertyManager, 'uploadRoute' => route('properties.media.store', $property)])
+                @include('admin._media', ['media' => $property->media, 'mediable' => $property, 'canManageMedia' => $isPropertyManager, 'uploadRoute' => route('properties.media.store', $property)])
 
-                @include('admin._notes', ['notes' => $property->notes, 'managePermission' => 'manage notes', 'canManageNotes' => $isPropertyManager, 'storeRoute' => route('properties.notes.store', $property)])
+                @include('admin._notes', ['notes' => $property->notes, 'canManageNotes' => $isPropertyManager, 'storeRoute' => route('properties.notes.store', $property)])
             @endunless
 
-            @can('manage properties')
+            @can('delete', $property)
                 <form class="danger-zone" method="POST" action="{{ route('properties.destroy', $property) }}" onsubmit="return confirm('Supprimer ce bien ?')">
                     @csrf @method('DELETE')
                     <div><strong>Supprimer le bien</strong><p>Les pièces jointes et les photos associées seront également supprimées.</p></div>
