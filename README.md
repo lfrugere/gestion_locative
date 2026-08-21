@@ -36,17 +36,19 @@ Fermer puis rouvrir le terminal avant de relancer `php artisan serve`.
 
 ## Authentification locale
 
-Renseigner les variables `ADMIN_NAME`, `ADMIN_EMAIL` et `ADMIN_PASSWORD` dans `.env`, puis créer le compte administrateur :
+Renseigner les variables `ADMIN_NAME`, `ADMIN_EMAIL` et `ADMIN_PASSWORD` dans `.env` pour créer un compte administrateur, et/ou `MANAGER_NAME`, `MANAGER_EMAIL` et `MANAGER_PASSWORD` pour créer un compte gestionnaire, puis lancer :
 
 ```cmd
 php artisan db:seed
 ```
 
+Chaque jeu de variables est optionnel et indépendant : seul un compte dont les trois variables correspondantes sont renseignées est créé, avec uniquement le rôle correspondant.
+
 La page de connexion est disponible sur http://localhost:8000/login. L'inscription publique est désactivée ; les comptes locataires seront ajoutés ultérieurement par un processus dédié.
 
 ## Back-office d'administration
 
-Le compte ayant le rôle `admin` peut accéder à http://localhost:8000/admin pour créer les immeubles et les logements. Les permissions sont préparées pour les rôles `admin`, `gestionnaire` et `locataire` ; seul le rôle `admin` peut créer les éléments dans cette première version.
+Le compte ayant le rôle `admin` peut accéder à http://localhost:8000/admin pour créer les immeubles et les logements. Le rôle `gestionnaire` consulte l'ensemble du patrimoine et gère (factures, photos, pièces jointes, notes) uniquement les biens qui lui ont été explicitement attribués. Le détail des droits par rôle et par entité est décrit dans [docs/roles-permissions.md](docs/roles-permissions.md).
 
 Les appartements et parkings doivent être rattachés à un immeuble. Une maison possède sa propre adresse.
 

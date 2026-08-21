@@ -139,6 +139,9 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::get('/properties/{property}/rooms/{room}', [PropertyRoomController::class, 'show'])
                 ->whereNumber(['property', 'room'])
                 ->name('property-rooms.show');
+            Route::post('/properties/{property}/media', [MediaController::class, 'storeProperty'])
+                ->whereNumber('property')
+                ->name('properties.media.store');
         });
 
         Route::middleware('permission:manage properties')->group(function () {
@@ -158,9 +161,6 @@ Route::middleware(['auth', 'permission:access admin'])
             Route::put('/properties/{property}/managers', [PropertyController::class, 'updateManagers'])
                 ->whereNumber('property')
                 ->name('properties.managers.update');
-            Route::post('/properties/{property}/media', [MediaController::class, 'storeProperty'])
-                ->whereNumber('property')
-                ->name('properties.media.store');
             Route::get('/properties/{property}/rooms/create', [PropertyRoomController::class, 'create'])
                 ->whereNumber('property')
                 ->name('property-rooms.create');
@@ -217,7 +217,7 @@ Route::middleware(['auth', 'permission:access admin'])
                 ->name('tenants.media.store');
         });
 
-        Route::middleware('permission:manage buildings|manage properties|manage tenants')->group(function () {
+        Route::middleware('permission:manage buildings|manage properties|manage tenants|view properties')->group(function () {
             Route::put('/media/{media}', [MediaController::class, 'update'])->name('media.update');
             Route::post('/media/{media}/primary', [MediaController::class, 'setPrimary'])->name('media.primary');
             Route::delete('/media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');

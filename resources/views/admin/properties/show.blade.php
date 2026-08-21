@@ -5,6 +5,7 @@
 @section('content')
     @php($mapAddress = $property->building?->address ?? $property->address)
     @php($primaryPhoto = $property->media->first(fn ($media) => $media->isPhoto() && $media->is_primary))
+    @php($isPropertyManager = auth()->user()->hasRole('admin') || $property->isManagedBy(auth()->user()))
 
     <section class="detail-hero">
         <div class="detail-hero-copy">
@@ -60,7 +61,7 @@
                 </section>
             @endcan
 
-            @can('manage invoices')
+            @if (auth()->user()->can('manage invoices') && $isPropertyManager)
                 <section class="detail-panel associated-panel">
                     <div class="panel-heading"><div><span class="panel-kicker">Charges</span><h2>Factures</h2></div><span class="count-badge">{{ $property->invoices->count() }}</span></div>
 
@@ -142,7 +143,7 @@
                         <div class="form-actions"><button class="button" type="submit">Ajouter la facture</button></div>
                     </form>
                 </section>
-            @endcan
+            @endif
 
             @can('manage properties')
                 <section class="detail-panel">
@@ -190,9 +191,9 @@
                 </section>
             @endif
 
-            @include('admin._media', ['media' => $property->media, 'mediable' => $property, 'managePermission' => 'manage properties', 'uploadRoute' => route('properties.media.store', $property)])
+            @include('admin._media', ['media' => $property->media, 'mediable' => $property, 'managePermission' => 'manage properties', 'canManageMedia' => $isPropertyManager, 'uploadRoute' => route('properties.media.store', $property)])
 
-            @include('admin._notes', ['notes' => $property->notes, 'managePermission' => 'manage notes', 'storeRoute' => route('properties.notes.store', $property)])
+            @include('admin._notes', ['notes' => $property->notes, 'managePermission' => 'manage notes', 'canManageNotes' => $isPropertyManager, 'storeRoute' => route('properties.notes.store', $property)])
 
             @can('manage properties')
                 <form class="danger-zone" method="POST" action="{{ route('properties.destroy', $property) }}" onsubmit="return confirm('Supprimer ce bien ?')">

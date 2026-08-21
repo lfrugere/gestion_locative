@@ -108,7 +108,7 @@ class PropertyInvoiceTest extends TestCase
         $this->assertSame('1000.00', $bankAccount->fresh()->balance);
     }
 
-    public function test_manager_without_invoice_permission_cannot_create_an_invoice(): void
+    public function test_manager_not_managing_the_property_cannot_create_an_invoice(): void
     {
         $manager = User::factory()->create();
         $manager->assignRole('gestionnaire');
@@ -122,6 +122,32 @@ class PropertyInvoiceTest extends TestCase
                 'date' => '2026-08-20',
             ])
             ->assertForbidden();
+    }
+
+    public function test_manager_managing_the_property_can_create_and_delete_an_invoice(): void
+    {
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+        $property = $this->createProperty(null);
+        $property->managers()->attach($manager);
+
+        $this->actingAs($manager)
+            ->post(route('properties.invoices.store', $property), [
+                'number' => 'F-2026-005',
+                'label' => 'Test gestionnaire',
+                'amount' => 25,
+                'date' => '2026-08-20',
+            ])
+            ->assertRedirect();
+
+        $invoice = $property->invoices()->first();
+        $this->assertNotNull($invoice);
+
+        $this->actingAs($manager)
+            ->delete(route('properties.invoices.destroy', [$property, $invoice]))
+            ->assertRedirect();
+
+        $this->assertNull($property->invoices()->find($invoice->id));
     }
 
     public function test_invoice_can_be_created_without_supplier_or_number(): void

@@ -5,6 +5,7 @@
 @section('content')
     @php($mapAddress = $property->building?->address ?? $property->address)
     @php($primaryPhoto = $property->media->first(fn ($media) => $media->isPhoto() && $media->is_primary))
+    @php($isPropertyManager = auth()->user()->hasRole('admin') || $property->isManagedBy(auth()->user()))
 
     <section class="detail-hero">
         <div class="detail-hero-copy">
@@ -66,9 +67,9 @@
                 </section>
             @endif
 
-            @include('admin._media', ['media' => $property->media, 'mediable' => $property, 'managePermission' => 'manage properties', 'uploadRoute' => route('properties.media.store', $property)])
+            @include('admin._media', ['media' => $property->media, 'mediable' => $property, 'managePermission' => 'manage properties', 'canManageMedia' => $isPropertyManager, 'uploadRoute' => route('properties.media.store', $property)])
 
-            @include('admin._notes', ['notes' => $property->notes, 'managePermission' => 'manage notes', 'storeRoute' => route('properties.notes.store', $property)])
+            @include('admin._notes', ['notes' => $property->notes, 'managePermission' => 'manage notes', 'canManageNotes' => $isPropertyManager, 'storeRoute' => route('properties.notes.store', $property)])
         </div>
 
         <aside class="detail-aside">
