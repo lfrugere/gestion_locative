@@ -15,6 +15,8 @@ class BankReconciliationController extends Controller
 {
     public function create(BankAccount $bankAccount): View
     {
+        abort_unless($this->canManage($bankAccount), 403);
+
         $lastClosed = $this->lastClosedReconciliation($bankAccount);
         $isFirstReconciliation = $lastClosed === null;
 
@@ -29,8 +31,10 @@ class BankReconciliationController extends Controller
 
     public function store(Request $request, BankAccount $bankAccount): RedirectResponse
     {
+        abort_unless($this->canManage($bankAccount), 403);
+
         if ($bankAccount->reconciliations()->whereNull('closed_at')->exists()) {
-            return to_route('bank-accounts.show', $bankAccount)
+            return to_route($this->showRouteName(), $bankAccount)
                 ->with('error', 'Un rapprochement est déjà en cours pour ce compte. Clôturez-le ou supprimez-le avant d’en démarrer un nouveau.');
         }
 
@@ -114,7 +118,7 @@ class BankReconciliationController extends Controller
 
         $reconciliation->update(['closed_at' => now()]);
 
-        return to_route('bank-accounts.show', $bankAccount)
+        return to_route($this->showRouteName(), $bankAccount)
             ->with('success', 'Le rapprochement a été clôturé.');
     }
 
@@ -131,12 +135,14 @@ class BankReconciliationController extends Controller
             $reconciliation->delete();
         });
 
-        return to_route('bank-accounts.show', $bankAccount)
+        return to_route($this->showRouteName(), $bankAccount)
             ->with('success', 'Le rapprochement a été supprimé.');
     }
 
     private function authorizeReconciliation(BankAccount $bankAccount, BankReconciliation $reconciliation): void
     {
+        abort_unless($this->canManage($bankAccount), 403);
+
         if ($reconciliation->bank_account_id !== $bankAccount->id) {
             abort(404);
         }
@@ -144,6 +150,18 @@ class BankReconciliationController extends Controller
         if ($reconciliation->isClosed()) {
             abort(403);
         }
+    }
+
+    private function canManage(BankAccount $bankAccount): bool
+    {
+        $user = auth()->user();
+
+        return $user->hasRole('admin') || $bankAccount->isManagedBy($user);
+    }
+
+    private function showRouteName(): string
+    {
+        return auth()->user()->hasRole('admin') ? 'bank-accounts.show' : 'mes-comptes-bancaires.show';
     }
 
     private function eligibleTransactions(BankAccount $bankAccount, BankReconciliation $reconciliation)

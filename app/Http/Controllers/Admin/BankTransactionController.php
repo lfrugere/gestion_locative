@@ -13,6 +13,8 @@ class BankTransactionController extends Controller
 {
     public function store(Request $request, BankAccount $bankAccount): RedirectResponse
     {
+        abort_unless($this->canManage($bankAccount), 403);
+
         $validated = $request->validate([
             'label' => ['required', 'string', 'max:255'],
             'date' => ['required', 'date'],
@@ -24,12 +26,14 @@ class BankTransactionController extends Controller
             $bankAccount->increment('balance', $validated['amount']);
         });
 
-        return to_route('bank-accounts.show', $bankAccount)
+        return to_route($this->showRouteName(), $bankAccount)
             ->with('success', 'L’écriture a été ajoutée.');
     }
 
     public function destroy(BankAccount $bankAccount, BankTransaction $transaction): RedirectResponse
     {
+        abort_unless($this->canManage($bankAccount), 403);
+
         if ($transaction->isLocked()) {
             return to_route('bank-accounts.show', $bankAccount)
                 ->with('error', 'Cette écriture appartient à un rapprochement clôturé et ne peut pas être supprimée.');
@@ -40,7 +44,19 @@ class BankTransactionController extends Controller
             $transaction->delete();
         });
 
-        return to_route('bank-accounts.show', $bankAccount)
+        return to_route($this->showRouteName(), $bankAccount)
             ->with('success', 'L’écriture a été supprimée.');
+    }
+
+    private function canManage(BankAccount $bankAccount): bool
+    {
+        $user = auth()->user();
+
+        return $user->hasRole('admin') || $bankAccount->isManagedBy($user);
+    }
+
+    private function showRouteName(): string
+    {
+        return auth()->user()->hasRole('admin') ? 'bank-accounts.show' : 'mes-comptes-bancaires.show';
     }
 }

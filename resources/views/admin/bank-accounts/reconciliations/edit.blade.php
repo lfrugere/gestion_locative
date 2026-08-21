@@ -5,13 +5,13 @@
 @section('content')
     <section class="detail-hero">
         <div class="detail-hero-copy">
-            <a class="back-link" href="{{ route('bank-accounts.show', $bankAccount) }}">← {{ $bankAccount->label }}</a>
+            <a class="back-link" href="{{ route(auth()->user()->hasRole('admin') ? 'bank-accounts.show' : 'mes-comptes-bancaires.show', $bankAccount) }}">← {{ $bankAccount->label }}</a>
             <div class="eyebrow">Rapprochement bancaire</div>
             <h1>Relevé du {{ $reconciliation->statement_date->format('d/m/Y') }}</h1>
             <p class="detail-lead">Cochez les écritures qui figurent sur votre relevé bancaire, puis enregistrez. Clôturez une fois l’écart à zéro.</p>
         </div>
         <div class="detail-hero-actions">
-            <a class="button secondary" href="{{ route('bank-accounts.show', $bankAccount) }}">Retour</a>
+            <a class="button secondary" href="{{ route(auth()->user()->hasRole('admin') ? 'bank-accounts.show' : 'mes-comptes-bancaires.show', $bankAccount) }}">Retour</a>
             <form method="POST" action="{{ route('bank-accounts.reconciliations.destroy', [$bankAccount, $reconciliation]) }}" onsubmit="return confirm('Supprimer ce rapprochement ?')">
                 @csrf
                 @method('DELETE')

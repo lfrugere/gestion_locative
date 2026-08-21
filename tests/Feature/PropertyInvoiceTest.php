@@ -27,7 +27,7 @@ class PropertyInvoiceTest extends TestCase
         app(PermissionRegistrar::class)->registerPermissions(app(Gate::class));
     }
 
-    public function test_admin_creating_an_invoice_adds_an_expense_to_the_linked_bank_account(): void
+    public function test_manager_creating_an_invoice_adds_an_expense_to_the_linked_bank_account(): void
     {
         $bankAccount = BankAccount::create([
             'label' => 'Compte principal',
@@ -36,8 +36,11 @@ class PropertyInvoiceTest extends TestCase
             'balance' => 1000,
         ]);
         $property = $this->createProperty($bankAccount->id);
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+        $property->managers()->attach($manager);
 
-        $this->actingAs($this->admin())
+        $this->actingAs($manager)
             ->post(route('properties.invoices.store', $property), [
                 'number' => 'F-2026-001',
                 'label' => 'Réparation chaudière',
@@ -63,8 +66,11 @@ class PropertyInvoiceTest extends TestCase
     public function test_invoice_without_linked_bank_account_does_not_create_a_transaction(): void
     {
         $property = $this->createProperty(null);
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+        $property->managers()->attach($manager);
 
-        $this->actingAs($this->admin())
+        $this->actingAs($manager)
             ->post(route('properties.invoices.store', $property), [
                 'number' => 'F-2026-002',
                 'label' => 'Petits travaux',
@@ -88,9 +94,11 @@ class PropertyInvoiceTest extends TestCase
             'balance' => 1000,
         ]);
         $property = $this->createProperty($bankAccount->id);
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+        $property->managers()->attach($manager);
 
-        $admin = $this->admin();
-        $this->actingAs($admin)->post(route('properties.invoices.store', $property), [
+        $this->actingAs($manager)->post(route('properties.invoices.store', $property), [
             'number' => 'F-2026-003',
             'label' => 'Nettoyage',
             'amount' => 60,
@@ -99,13 +107,33 @@ class PropertyInvoiceTest extends TestCase
 
         $invoice = $property->invoices()->first();
 
-        $this->actingAs($admin)
+        $this->actingAs($manager)
             ->delete(route('properties.invoices.destroy', [$property, $invoice]))
             ->assertRedirect();
 
         $this->assertNull($property->invoices()->find($invoice->id));
         $this->assertDatabaseMissing('bank_transactions', ['id' => $invoice->bank_transaction_id]);
         $this->assertSame('1000.00', $bankAccount->fresh()->balance);
+    }
+
+    public function test_admin_has_no_invoice_access_even_on_an_unmanaged_property(): void
+    {
+        $property = $this->createProperty(null);
+
+        $this->actingAs($this->admin())
+            ->post(route('properties.invoices.store', $property), [
+                'label' => 'Test admin',
+                'amount' => 10,
+                'date' => '2026-08-20',
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('invoices', 0);
+
+        $this->actingAs($this->admin())
+            ->get(route('properties.show', $property))
+            ->assertOk()
+            ->assertDontSee('Factures');
     }
 
     public function test_manager_not_managing_the_property_cannot_create_an_invoice(): void
@@ -153,8 +181,11 @@ class PropertyInvoiceTest extends TestCase
     public function test_invoice_can_be_created_without_supplier_or_number(): void
     {
         $property = $this->createProperty(null);
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+        $property->managers()->attach($manager);
 
-        $this->actingAs($this->admin())
+        $this->actingAs($manager)
             ->post(route('properties.invoices.store', $property), [
                 'label' => 'Divers',
                 'amount' => 42,
@@ -169,11 +200,14 @@ class PropertyInvoiceTest extends TestCase
         $this->assertNull($invoice->number);
     }
 
-    public function test_admin_can_tag_an_invoice_with_freeform_comma_separated_tags(): void
+    public function test_manager_can_tag_an_invoice_with_freeform_comma_separated_tags(): void
     {
         $property = $this->createProperty(null);
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+        $property->managers()->attach($manager);
 
-        $this->actingAs($this->admin())
+        $this->actingAs($manager)
             ->post(route('properties.invoices.store', $property), [
                 'label' => 'Ravalement façade',
                 'amount' => 500,
@@ -188,7 +222,8 @@ class PropertyInvoiceTest extends TestCase
         $this->assertSame(['travaux', 'Urgent'], $invoice->tags->pluck('name')->all());
 
         $secondProperty = $this->createProperty(null, 'BIEN-TEST-2');
-        $this->actingAs($this->admin())
+        $secondProperty->managers()->attach($manager);
+        $this->actingAs($manager)
             ->post(route('properties.invoices.store', $secondProperty), [
                 'label' => 'Autre facture',
                 'amount' => 10,
@@ -199,13 +234,16 @@ class PropertyInvoiceTest extends TestCase
         $this->assertSame(1, Tag::where('name', 'travaux')->count());
     }
 
-    public function test_admin_can_attach_files_directly_when_creating_an_invoice(): void
+    public function test_manager_can_attach_files_directly_when_creating_an_invoice(): void
     {
         Storage::fake('local');
 
         $property = $this->createProperty(null);
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+        $property->managers()->attach($manager);
 
-        $this->actingAs($this->admin())
+        $this->actingAs($manager)
             ->post(route('properties.invoices.store', $property), [
                 'label' => 'Entretien chaudière',
                 'amount' => 90,
@@ -224,14 +262,17 @@ class PropertyInvoiceTest extends TestCase
         $invoice->media->each(fn ($media) => Storage::disk('local')->assertExists($media->path));
     }
 
-    public function test_admin_can_attach_and_remove_a_file_on_an_invoice(): void
+    public function test_manager_can_attach_and_remove_a_file_on_an_invoice_of_a_managed_property(): void
     {
         Storage::fake('local');
 
         $property = $this->createProperty(null);
         $admin = $this->admin();
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+        $property->managers()->attach($manager);
 
-        $this->actingAs($admin)->post(route('properties.invoices.store', $property), [
+        $this->actingAs($manager)->post(route('properties.invoices.store', $property), [
             'supplier' => 'Plombier Dupont',
             'number' => 'F-2026-010',
             'label' => 'Fuite salle de bain',
@@ -241,7 +282,14 @@ class PropertyInvoiceTest extends TestCase
 
         $invoice = $property->invoices()->first();
 
+        // Admin no longer has any access to invoices, including their attachments.
         $this->actingAs($admin)
+            ->post(route('properties.invoices.media.store', [$property, $invoice]), [
+                'file' => UploadedFile::fake()->create('facture.pdf', 100, 'application/pdf'),
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($manager)
             ->post(route('properties.invoices.media.store', [$property, $invoice]), [
                 'file' => UploadedFile::fake()->create('facture.pdf', 100, 'application/pdf'),
             ])
@@ -251,7 +299,7 @@ class PropertyInvoiceTest extends TestCase
         $media = $invoice->media()->first();
         Storage::disk('local')->assertExists($media->path);
 
-        $this->actingAs($admin)
+        $this->actingAs($manager)
             ->delete(route('media.destroy', $media))
             ->assertRedirect();
 

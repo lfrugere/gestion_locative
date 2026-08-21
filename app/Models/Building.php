@@ -30,4 +30,9 @@ class Building extends Model
     {
         return $this->morphMany(Note::class, 'notable')->latest();
     }
+
+    public function isManagedBy(User $user): bool
+    {
+        return $this->properties()->whereHas('managers', fn ($query) => $query->whereKey($user->id))->exists();
+    }
 }

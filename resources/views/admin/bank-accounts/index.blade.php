@@ -8,9 +8,9 @@
             <p class="muted">Admin Locative</p>
             <h1>Comptes Bancaires</h1>
         </div>
-        @can('manage bank accounts')
+        @if (auth()->user()->hasRole('admin'))
             <a class="button" href="{{ route('bank-accounts.create') }}">Ajouter un compte</a>
-        @endcan
+        @endif
     </div>
 
     <div class="card table-wrap">
@@ -30,14 +30,14 @@
                             <td>{{ $bankAccount->manager?->name ?? '—' }}</td>
                             <td>{{ number_format($bankAccount->balance, 2, ',', ' ') }} €</td>
                             <td class="actions">
-                                @can('manage bank accounts')
+                                @if (auth()->user()->hasRole('admin') || $bankAccount->isManagedBy(auth()->user()))
                                     <a class="icon-action" href="{{ route('bank-accounts.edit', $bankAccount) }}" aria-label="Modifier {{ $bankAccount->label }}" data-tooltip="Modifier" title="Modifier"><span aria-hidden="true">✎</span></a>
                                     <form method="POST" action="{{ route('bank-accounts.destroy', $bankAccount) }}" onsubmit="return confirm('Supprimer ce compte bancaire ?')">
                                         @csrf
                                         @method('DELETE')
                                         <button class="icon-action danger-action" type="submit" aria-label="Supprimer {{ $bankAccount->label }}" data-tooltip="Supprimer" title="Supprimer"><span aria-hidden="true">×</span></button>
                                     </form>
-                                @endcan
+                                @endif
                             </td>
                         </tr>
                     @endforeach

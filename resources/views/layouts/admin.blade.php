@@ -244,6 +244,11 @@
                         || request()->routeIs('mes-biens')
                         || request()->routeIs('mes-biens.*')
                         || request()->routeIs('mes-locataires')
+                        || request()->routeIs('mes-locataires.*')
+                        || request()->routeIs('mes-immeubles')
+                        || request()->routeIs('mes-immeubles.*')
+                        || request()->routeIs('mes-comptes-bancaires')
+                        || request()->routeIs('mes-comptes-bancaires.*')
                         || request()->routeIs('mes-contrats');
                     $adminLocativeActive = request()->routeIs('admin-locative')
                         || request()->routeIs('buildings.*')
@@ -267,9 +272,11 @@
                                 @can('view properties')
                                     <a href="{{ route('mes-biens') }}">Mes biens</a>
                                 @endcan
-                                @can('view tenants')
+                                @hasrole('gestionnaire')
+                                    <a href="{{ route('mes-immeubles') }}">Mes immeubles</a>
                                     <a href="{{ route('mes-locataires') }}">Mes locataires</a>
-                                @endcan
+                                    <a href="{{ route('mes-comptes-bancaires') }}">Mes comptes bancaires</a>
+                                @endhasrole
                                 <a href="{{ route('mes-contrats') }}">Mes contrats</a>
                             </div>
                         @endif

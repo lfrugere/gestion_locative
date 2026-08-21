@@ -48,14 +48,23 @@ class DatabaseSeeder extends Seeder
         $admin->syncPermissions($permissions);
 
         $manager = Role::findOrCreate('gestionnaire', 'web');
+        // Le gestionnaire ne reçoit plus 'view buildings' / 'view tenants' /
+        // 'manage tenants' / 'view bank accounts' : les pages admin /buildings, /tenants
+        // et le listing/l'édition de /bank-accounts sont réservées au rôle admin
+        // (verrouillées par le middleware role:admin sur ces routes). Le gestionnaire
+        // consulte en lecture seule ses immeubles, locataires et comptes bancaires via
+        // /mes-immeubles, /mes-locataires et /mes-comptes-bancaires (PortfolioController),
+        // scopés à ses biens gérés sans avoir besoin de ces permissions.
+        // 'manage bank accounts' reste accordée : elle ne rouvre pas la création/édition
+        // du compte lui-même (verrouillée par role:admin, voir routes/web.php), seulement
+        // la saisie d'écritures et les rapprochements, scopés par ownership dans
+        // BankTransactionController / BankReconciliationController.
         $manager->syncPermissions([
             'access admin',
-            'view buildings',
             'view properties',
-            'view tenants',
-            'view bank accounts',
             'manage notes',
             'manage invoices',
+            'manage bank accounts',
         ]);
 
         $tenantRole = Role::findOrCreate('locataire', 'web');

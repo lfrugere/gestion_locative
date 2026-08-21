@@ -37,9 +37,12 @@ class PropertyRoomController extends Controller
     {
         $this->ensureRoomBelongsToProperty($property, $room);
 
+        $user = auth()->user();
+
         return view('admin.property-rooms.show', [
             'property' => $property,
             'room' => $room->load(['media.tags', 'notes.author', 'notes.editor']),
+            'isPropertyManager' => $user->hasRole('admin') || $property->isManagedBy($user),
         ]);
     }
 

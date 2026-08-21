@@ -27,13 +27,20 @@ class BankAccountController extends Controller
 
     public function index(): View
     {
+        $user = auth()->user();
+
         return view('admin.bank-accounts.index', [
-            'bankAccounts' => BankAccount::with('manager')->orderBy('label')->get(),
+            'bankAccounts' => BankAccount::with('manager')
+                ->when(! $user->hasRole('admin'), fn ($query) => $query->whereHas('properties', fn ($q) => $q->whereHas('managers', fn ($q2) => $q2->whereKey($user->id))))
+                ->orderBy('label')
+                ->get(),
         ]);
     }
 
     public function create(): View
     {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+
         return view('admin.bank-accounts.create', [
             'managers' => $this->managers(),
             'countries' => self::COUNTRIES,
@@ -42,6 +49,8 @@ class BankAccountController extends Controller
 
     public function show(Request $request, BankAccount $bankAccount): View
     {
+        abort_unless($this->canManage($bankAccount), 403);
+
         $bankAccount->load(['manager', 'reconciliations.createdBy']);
 
         $filters = $request->only(['q', 'date_from', 'date_to', 'status']);
@@ -68,11 +77,14 @@ class BankAccountController extends Controller
             'transactions' => $transactions,
             'filters' => $filters,
             'openReconciliation' => $bankAccount->reconciliations()->whereNull('closed_at')->first(),
+            'canManageBankAccount' => $this->canManage($bankAccount),
         ]);
     }
 
     public function edit(BankAccount $bankAccount): View
     {
+        abort_unless($this->canManage($bankAccount), 403);
+
         return view('admin.bank-accounts.edit', [
             'bankAccount' => $bankAccount,
             'managers' => $this->managers(),
@@ -82,16 +94,22 @@ class BankAccountController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+
         return $this->save($request, null);
     }
 
     public function update(Request $request, BankAccount $bankAccount): RedirectResponse
     {
+        abort_unless($this->canManage($bankAccount), 403);
+
         return $this->save($request, $bankAccount);
     }
 
     public function destroy(BankAccount $bankAccount): RedirectResponse
     {
+        abort_unless($this->canManage($bankAccount), 403);
+
         if ($bankAccount->transactions()->exists()) {
             return to_route('bank-accounts.index')
                 ->with('error', 'Impossible de supprimer un compte auquel des écritures sont rattachées.');
@@ -101,6 +119,18 @@ class BankAccountController extends Controller
 
         return to_route('bank-accounts.index')
             ->with('success', 'Le compte bancaire a été supprimé.');
+    }
+
+    /**
+     * A manager may manage (view or edit) a bank account only when it is linked to at least
+     * one property they manage. Creating a brand-new bank account (not yet linked to any
+     * property) remains admin-only, since there is no property to establish that scope.
+     */
+    public function canManage(BankAccount $bankAccount): bool
+    {
+        $user = auth()->user();
+
+        return $user->hasRole('admin') || $bankAccount->isManagedBy($user);
     }
 
     private function save(Request $request, ?BankAccount $bankAccount): RedirectResponse

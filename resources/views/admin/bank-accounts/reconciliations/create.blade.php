@@ -5,7 +5,7 @@
 @section('content')
     <section class="detail-hero">
         <div class="detail-hero-copy">
-            <a class="back-link" href="{{ route('bank-accounts.show', $bankAccount) }}">← {{ $bankAccount->label }}</a>
+            <a class="back-link" href="{{ route(auth()->user()->hasRole('admin') ? 'bank-accounts.show' : 'mes-comptes-bancaires.show', $bankAccount) }}">← {{ $bankAccount->label }}</a>
             <div class="eyebrow">Rapprochement bancaire</div>
             <h1>Nouveau rapprochement</h1>
             <p class="detail-lead">Saisissez la date et le solde de clôture indiqués sur votre relevé bancaire.</p>

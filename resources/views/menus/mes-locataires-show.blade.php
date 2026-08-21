@@ -6,7 +6,7 @@
     @php($primaryPhoto = $tenant->media->first(fn ($media) => $media->isPhoto() && $media->is_primary))
     <section class="detail-hero">
         <div class="detail-hero-copy">
-            <a class="back-link" href="{{ route('tenants.index') }}">← Tous les locataires</a>
+            <a class="back-link" href="{{ route('mes-locataires') }}">← Mes locataires</a>
             <div class="eyebrow">Locataire</div>
             <h1>{{ $tenant->fullName() }}</h1>
             <p class="detail-lead">{{ $tenant->civilityLabel() }}</p>
@@ -16,7 +16,6 @@
         @endif
         <div class="detail-hero-actions">
             <span class="status-pill status-{{ $tenant->status }}">{{ $tenant->statusLabel() }}</span>
-            @if ($isTenantManager)<a class="button secondary" href="{{ route('tenants.edit', $tenant) }}">Modifier</a>@endif
         </div>
     </section>
 
@@ -39,30 +38,26 @@
                 @else
                     <div class="associated-list">
                         @foreach ($tenant->properties as $associatedProperty)
-                            <a class="associated-row" href="{{ route('properties.show', $associatedProperty) }}">
-                                <span class="entity-mark">{{ $associatedProperty->type === 'parking' ? 'P' : 'A' }}</span>
-                                <span><strong>{{ $associatedProperty->name }}</strong><small>{{ $associatedProperty->reference }}</small></span>
-                                <span class="row-arrow">→</span>
-                            </a>
+                            @if ($associatedProperty->isManagedBy(auth()->user()))
+                                <a class="associated-row" href="{{ route('mes-biens.show', $associatedProperty) }}">
+                                    <span class="entity-mark">{{ $associatedProperty->type === 'parking' ? 'P' : 'A' }}</span>
+                                    <span><strong>{{ $associatedProperty->name }}</strong><small>{{ $associatedProperty->reference }}</small></span>
+                                    <span class="row-arrow">→</span>
+                                </a>
+                            @else
+                                <div class="associated-row">
+                                    <span class="entity-mark">{{ $associatedProperty->type === 'parking' ? 'P' : 'A' }}</span>
+                                    <span><strong>{{ $associatedProperty->name }}</strong><small>{{ $associatedProperty->reference }}</small></span>
+                                </div>
+                            @endif
                         @endforeach
                     </div>
                 @endif
             </section>
 
-            @unless (auth()->user()->hasRole('admin'))
-                @include('admin._media', ['media' => $tenant->media, 'mediable' => $tenant, 'managePermission' => 'manage tenants', 'canManageMedia' => $isTenantManager, 'uploadRoute' => route('tenants.media.store', $tenant), 'singlePhoto' => true])
+            @include('admin._media', ['media' => $tenant->media, 'mediable' => $tenant, 'managePermission' => 'manage tenants', 'canManageMedia' => false, 'uploadRoute' => '#', 'singlePhoto' => true])
 
-                @include('admin._notes', ['notes' => $tenant->notes, 'managePermission' => 'manage notes', 'canManageNotes' => auth()->user()->can('manage notes') && $isTenantManager, 'storeRoute' => route('tenants.notes.store', $tenant)])
-            @endunless
-
-            @if ($isTenantManager)
-                <form class="danger-zone" method="POST" action="{{ route('tenants.destroy', $tenant) }}" onsubmit="return confirm('Supprimer ce locataire ?')">
-                    @csrf @method('DELETE')
-                    <div><strong>Supprimer le locataire</strong><p>Les pièces jointes et les photos associées seront également supprimées.</p></div>
-                    <button class="button danger" type="submit">Supprimer</button>
-                </form>
-            @endif
+            @include('admin._notes', ['notes' => $tenant->notes, 'managePermission' => 'manage notes', 'canManageNotes' => false, 'storeRoute' => '#'])
         </div>
-
     </div>
 @endsection

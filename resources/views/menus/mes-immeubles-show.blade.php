@@ -4,10 +4,11 @@
 
 @section('content')
     @php($primaryPhoto = $building->media->first(fn ($media) => $media->isPhoto() && $media->is_primary))
+    @php($user = auth()->user())
 
     <section class="detail-hero">
         <div class="detail-hero-copy">
-            <a class="back-link" href="{{ route('buildings.index') }}">← Tous les immeubles</a>
+            <a class="back-link" href="{{ route('mes-immeubles') }}">← Mes immeubles</a>
             <div class="eyebrow">Immeuble · {{ $building->reference }}</div>
             <h1>{{ $building->name }}</h1>
             <p class="detail-lead">{{ $building->address->line1 }}, {{ $building->address->postal_code }} {{ $building->address->city }}</p>
@@ -17,9 +18,6 @@
         @endif
         <div class="detail-hero-actions">
             <span class="status-pill status-active">{{ $building->properties->count() }} bien{{ $building->properties->count() > 1 ? 's' : '' }}</span>
-            @can('manage buildings')
-                <a class="button secondary" href="{{ route('buildings.edit', $building) }}">Modifier</a>
-            @endcan
         </div>
     </section>
 
@@ -37,30 +35,29 @@
                 @else
                     <div class="associated-list">
                         @foreach ($building->properties as $property)
-                            <a class="associated-row" href="{{ route('properties.show', $property) }}">
-                                <span class="entity-mark">{{ $property->type === 'parking' ? 'P' : 'A' }}</span>
-                                <span><strong>{{ $property->name }}</strong><small>{{ $property->reference }} · {{ $property->typeLabel() }}@if($property->floor) · Étage {{ $property->floor }}@endif</small></span>
-                                <span class="status-pill {{ $property->status === 'active' ? 'status-active' : 'status-muted' }}">{{ $property->status === 'active' ? 'Actif' : 'Inactif' }}</span>
-                                <span class="row-arrow">→</span>
-                            </a>
+                            @php($isManagedProperty = $property->isManagedBy($user))
+                            @if ($isManagedProperty)
+                                <a class="associated-row" href="{{ route('mes-biens.show', $property) }}">
+                                    <span class="entity-mark">{{ $property->type === 'parking' ? 'P' : 'A' }}</span>
+                                    <span><strong>{{ $property->name }}</strong><small>{{ $property->reference }} · {{ $property->typeLabel() }}</small></span>
+                                    <span class="status-pill {{ $property->status === 'active' ? 'status-active' : 'status-muted' }}">{{ $property->status === 'active' ? 'Actif' : 'Inactif' }}</span>
+                                    <span class="row-arrow">→</span>
+                                </a>
+                            @else
+                                <div class="associated-row">
+                                    <span class="entity-mark">{{ $property->type === 'parking' ? 'P' : 'A' }}</span>
+                                    <span><strong>{{ $property->name }}</strong><small>{{ $property->reference }} · {{ $property->typeLabel() }}</small></span>
+                                    <span class="status-pill status-muted">Géré par un autre gestionnaire</span>
+                                </div>
+                            @endif
                         @endforeach
                     </div>
                 @endif
             </section>
 
-            @unless (auth()->user()->hasRole('admin'))
-                @include('admin._media', ['media' => $building->media, 'mediable' => $building, 'managePermission' => 'manage buildings', 'uploadRoute' => route('buildings.media.store', $building)])
+            @include('admin._media', ['media' => $building->media, 'mediable' => $building, 'managePermission' => 'manage buildings', 'canManageMedia' => false, 'uploadRoute' => '#'])
 
-                @include('admin._notes', ['notes' => $building->notes, 'managePermission' => 'manage notes', 'canManageNotes' => auth()->user()->can('manage notes') && $isBuildingManager, 'storeRoute' => route('buildings.notes.store', $building)])
-            @endunless
-
-            @can('manage buildings')
-                <form class="danger-zone" method="POST" action="{{ route('buildings.destroy', $building) }}" onsubmit="return confirm('Supprimer cet immeuble ?')">
-                    @csrf @method('DELETE')
-                    <div><strong>Supprimer l’immeuble</strong><p>Cette action est possible uniquement lorsqu’aucun bien n’est rattaché.</p></div>
-                    <button class="button danger" type="submit">Supprimer</button>
-                </form>
-            @endcan
+            @include('admin._notes', ['notes' => $building->notes, 'managePermission' => 'manage notes', 'canManageNotes' => false, 'storeRoute' => '#'])
         </div>
 
         <aside class="detail-aside">

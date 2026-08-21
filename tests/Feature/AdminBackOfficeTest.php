@@ -422,8 +422,11 @@ class AdminBackOfficeTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_upload_media_on_a_property_room(): void
+    public function test_admin_has_no_media_access_on_a_property_room(): void
     {
+        // Pièces de colocation : réservées à 'manage properties' (admin only), mais l'admin
+        // n'a plus aucun accès aux médias, sur aucune entité (cf. docs/roles-permissions.md).
+        // La gestion des médias de pièce est donc aujourd'hui hors d'atteinte pour tout rôle.
         $property = Property::create([
             'reference' => 'ROOM-MEDIA-01',
             'name' => 'Maison media pieces',
@@ -440,17 +443,15 @@ class AdminBackOfficeTest extends TestCase
                 'kind' => Media::KIND_PHOTO,
                 'file' => UploadedFile::fake()->create('chambre.jpg', 100, 'image/jpeg'),
             ])
-            ->assertRedirect(route('property-rooms.show', [$property, $room]));
+            ->assertForbidden();
 
-        $this->assertDatabaseHas('media', [
+        $this->assertDatabaseMissing('media', [
             'mediable_type' => PropertyRoom::class,
             'mediable_id' => $room->id,
-            'kind' => Media::KIND_PHOTO,
-            'is_primary' => true,
         ]);
     }
 
-    public function test_admin_can_upload_tag_and_manage_media_on_a_property(): void
+    public function test_admin_has_no_media_access_on_a_property(): void
     {
         $admin = $this->admin();
         $property = Property::create([
@@ -465,48 +466,9 @@ class AdminBackOfficeTest extends TestCase
                 'kind' => Media::KIND_PHOTO,
                 'file' => UploadedFile::fake()->create('facade.jpg', 100, 'image/jpeg'),
             ])
-            ->assertRedirect(route('properties.show', $property));
+            ->assertForbidden();
 
-        $photo = Media::firstOrFail();
-        $this->assertTrue($photo->is_primary);
-
-        $this->actingAs($admin)
-            ->post(route('properties.media.store', $property), [
-                'kind' => Media::KIND_PHOTO,
-                'file' => UploadedFile::fake()->create('salon.jpg', 100, 'image/jpeg'),
-            ])
-            ->assertRedirect(route('properties.show', $property));
-
-        $secondPhoto = Media::where('kind', Media::KIND_PHOTO)->where('id', '!=', $photo->id)->firstOrFail();
-        $this->assertSame(1, Media::where('kind', Media::KIND_PHOTO)->where('is_primary', true)->count());
-
-        $this->actingAs($admin)
-            ->post(route('properties.media.store', $property), [
-                'kind' => Media::KIND_DOCUMENT,
-                'type' => Media::TYPE_DIAGNOSTICS,
-                'file' => UploadedFile::fake()->create('diagnostic.pdf', 100, 'application/pdf'),
-                'display_name' => 'Diagnostic énergétique',
-                'tags' => 'diagnostic, énergie',
-            ])
-            ->assertRedirect(route('properties.show', $property));
-
-        $document = Media::where('kind', Media::KIND_DOCUMENT)->firstOrFail();
-        $this->assertSame(Media::TYPE_DIAGNOSTICS, $document->type);
-        $this->assertStringContainsString('media/property/MEDIA-01/diagnostics/', $document->path);
-        $this->assertSame('Diagnostic énergétique', $document->display_name);
-        $this->assertDatabaseHas('tags', ['name' => 'diagnostic']);
-        $this->assertDatabaseHas('tags', ['name' => 'énergie']);
-
-        $this->actingAs($admin)
-            ->get(route('media.download', $document))
-            ->assertOk();
-
-        $this->actingAs($admin)
-            ->delete(route('media.destroy', $photo))
-            ->assertRedirect();
-
-        $this->assertDatabaseMissing('media', ['id' => $photo->id]);
-        $this->assertDatabaseHas('media', ['id' => $secondPhoto->id, 'is_primary' => true]);
+        $this->assertDatabaseMissing('media', ['mediable_type' => Property::class, 'mediable_id' => $property->id]);
     }
 
     public function test_manager_can_manage_media_and_notes_only_on_a_property_they_manage(): void
@@ -567,15 +529,17 @@ class AdminBackOfficeTest extends TestCase
 
     public function test_media_upload_is_limited_to_twenty_megabytes_with_a_clear_error_message(): void
     {
-        $admin = $this->admin();
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
         $property = Property::create([
             'reference' => 'MEDIA-TOO-LARGE',
             'name' => 'Bien media volumineux',
             'type' => Property::TYPE_HOUSE,
             'status' => 'active',
         ]);
+        $property->managers()->attach($manager);
 
-        $this->actingAs($admin)
+        $this->actingAs($manager)
             ->post(route('properties.media.store', $property), [
                 'kind' => Media::KIND_DOCUMENT,
                 'file' => UploadedFile::fake()->create('diagnostic.pdf', 20481, 'application/pdf'),
@@ -659,7 +623,7 @@ class AdminBackOfficeTest extends TestCase
             ->assertDontSee($activeTenant->fullName());
     }
 
-    public function test_admin_can_manage_tenant_media_and_manager_has_read_only_access(): void
+    public function test_admin_can_manage_tenant_media_and_manager_is_locked_out_of_admin_tenant_pages(): void
     {
         $tenant = Tenant::create([
             'civility' => Tenant::CIVILITY_MR,
@@ -669,61 +633,56 @@ class AdminBackOfficeTest extends TestCase
         ]);
         $admin = $this->admin();
 
+        // Tenant media is unreachable for admin (no media access anywhere) and for a
+        // manager (no 'manage tenants' permission any more): the feature has no valid
+        // actor today.
         $this->actingAs($admin)
             ->post(route('tenants.media.store', $tenant), [
                 'kind' => Media::KIND_PHOTO,
                 'file' => UploadedFile::fake()->create('portrait.jpg', 100, 'image/jpeg'),
             ])
-            ->assertRedirect(route('tenants.show', $tenant));
+            ->assertForbidden();
 
-        $photo = Media::firstOrFail();
-        $this->assertTrue($photo->is_primary);
-
-        $this->actingAs($admin)
-            ->post(route('tenants.media.store', $tenant), [
-                'kind' => Media::KIND_PHOTO,
-                'file' => UploadedFile::fake()->create('second-portrait.jpg', 100, 'image/jpeg'),
-            ])
-            ->assertSessionHasErrors([
-                'file' => 'Un locataire ne peut avoir qu’une seule photo d’identité. Supprimez-la avant d’en ajouter une autre.',
-            ]);
-
-        $this->assertSame(1, $tenant->media()->where('kind', Media::KIND_PHOTO)->count());
-
-        $this->actingAs($admin)
-            ->get(route('tenants.show', $tenant))
-            ->assertOk()
-            ->assertSee('detail-hero-photo', false)
-            ->assertSee('Photo d’identité');
-
-        $this->actingAs($admin)
-            ->post(route('tenants.media.store', $tenant), [
-                'kind' => Media::KIND_DOCUMENT,
-                'type' => Media::TYPE_IDENTITY,
-                'file' => UploadedFile::fake()->create('dossier.pdf', 100, 'application/pdf'),
-                'display_name' => 'Dossier de candidature',
-                'tags' => 'candidature, identité',
-            ])
-            ->assertRedirect(route('tenants.show', $tenant));
-
-        $this->assertDatabaseHas('media', [
-            'mediable_type' => Tenant::class,
-            'mediable_id' => $tenant->id,
-            'type' => Media::TYPE_IDENTITY,
-            'display_name' => 'Dossier de candidature',
-        ]);
-        $this->assertStringContainsString('media/tenant/'.$tenant->storage_key.'/identity/', Media::where('mediable_id', $tenant->id)->where('type', Media::TYPE_IDENTITY)->value('path'));
+        $this->assertDatabaseMissing('media', ['mediable_type' => Tenant::class, 'mediable_id' => $tenant->id]);
 
         $manager = User::factory()->create();
         $manager->assignRole('gestionnaire');
 
+        // /tenants is now admin-only: the manager cannot reach it at all, read or write,
+        // even by direct URL. They would use /mes-locataires instead (see RoleScopingTest),
+        // and this tenant is not attached to any of their managed properties anyway.
         $this->actingAs($manager)
             ->get(route('tenants.show', $tenant))
-            ->assertOk();
+            ->assertForbidden();
 
         $this->actingAs($manager)
-            ->get(route('tenants.create'))
+            ->get(route('tenants.edit', $tenant))
             ->assertForbidden();
+
+        $this->actingAs($manager)
+            ->put(route('tenants.update', $tenant), [
+                'civility' => Tenant::CIVILITY_MR,
+                'last_name' => 'Martin',
+                'first_name' => 'Paul',
+                'status' => Tenant::STATUS_ACTIVE,
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($manager)
+            ->delete(route('tenants.destroy', $tenant))
+            ->assertForbidden();
+
+        // Creating a tenant is now admin-only: even a manager who manages a property
+        // cannot create one any more (route locked with role:admin).
+        $building = $this->createBuilding();
+        $managedProperty = Property::create([
+            'reference' => 'TENANT-SCOPE-01',
+            'name' => 'Bien géré du gestionnaire',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'status' => 'active',
+        ]);
+        $managedProperty->managers()->attach($manager);
 
         $this->actingAs($manager)
             ->post(route('tenants.store'), [
@@ -731,11 +690,14 @@ class AdminBackOfficeTest extends TestCase
                 'last_name' => 'Gestionnaire',
                 'first_name' => 'Sophie',
                 'status' => Tenant::STATUS_CANDIDATE,
+                'properties' => [$managedProperty->id],
             ])
             ->assertForbidden();
+
+        $this->assertDatabaseMissing('tenants', ['first_name' => 'Sophie']);
     }
 
-    public function test_admin_can_add_edit_and_delete_a_note_on_a_building(): void
+    public function test_admin_has_no_note_access_on_a_building(): void
     {
         $admin = $this->admin();
         $building = $this->createBuilding();
@@ -744,51 +706,33 @@ class AdminBackOfficeTest extends TestCase
             ->post(route('buildings.notes.store', $building), [
                 'body' => 'Interphone à changer',
             ])
-            ->assertRedirect(route('buildings.show', $building));
+            ->assertForbidden();
 
-        $note = Note::firstOrFail();
-        $this->assertSame(Building::class, $note->notable_type);
-        $this->assertSame($building->id, $note->notable_id);
-        $this->assertSame($admin->id, $note->created_by);
-        $this->assertNull($note->updated_by);
-        $this->assertFalse($note->wasEdited());
+        $this->assertDatabaseCount('notes', 0);
 
         $this->actingAs($admin)
             ->get(route('buildings.show', $building))
             ->assertOk()
-            ->assertSee('Interphone à changer')
-            ->assertSee($admin->name);
-
-        $this->actingAs($admin)
-            ->put(route('notes.update', $note), [
-                'body' => 'Interphone changé',
-            ])
-            ->assertRedirect();
-
-        $note->refresh();
-        $this->assertSame('Interphone changé', $note->body);
-        $this->assertSame($admin->id, $note->updated_by);
-        $this->assertTrue($note->wasEdited());
-
-        $this->actingAs($admin)
-            ->delete(route('notes.destroy', $note))
-            ->assertRedirect();
-
-        $this->assertDatabaseMissing('notes', ['id' => $note->id]);
+            ->assertDontSee('Fil de notes');
     }
 
-    public function test_manager_can_add_notes_on_any_entity_but_not_a_locataire(): void
+    public function test_manager_can_never_add_notes_on_buildings_or_tenants_even_on_a_managed_property(): void
     {
+        // Adding a note on a building or a tenant is now admin-only: the manager's
+        // dedicated pages (/mes-immeubles, /mes-locataires) are read-only, including
+        // for notes. This is a deliberate change from an earlier iteration where the
+        // manager could add such notes when they managed the related property.
         $manager = User::factory()->create();
         $manager->assignRole('gestionnaire');
 
         $building = $this->createBuilding();
-
-        $this->actingAs($manager)
-            ->post(route('buildings.notes.store', $building), ['body' => 'Autorisé'])
-            ->assertRedirect(route('buildings.show', $building));
-
-        $this->assertDatabaseCount('notes', 1);
+        $property = Property::create([
+            'reference' => 'NOTE-SCOPE-01',
+            'name' => 'Bien géré',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'status' => 'active',
+        ]);
 
         $tenant = Tenant::create([
             'civility' => Tenant::CIVILITY_MR,
@@ -798,22 +742,41 @@ class AdminBackOfficeTest extends TestCase
         ]);
 
         $this->actingAs($manager)
-            ->post(route('tenants.notes.store', $tenant), ['body' => 'Autorisé aussi'])
-            ->assertRedirect(route('tenants.show', $tenant));
-
-        $this->assertDatabaseCount('notes', 2);
-
-        $locataire = User::factory()->create();
-        $locataire->assignRole('locataire');
-
-        $this->actingAs($locataire)
             ->post(route('buildings.notes.store', $building), ['body' => 'Non autorisé'])
             ->assertForbidden();
 
-        $this->assertDatabaseCount('notes', 2);
+        $this->actingAs($manager)
+            ->post(route('tenants.notes.store', $tenant), ['body' => 'Non autorisé'])
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('notes', 0);
+
+        // Still forbidden even once the manager manages the building's property and the
+        // tenant is attached to it.
+        $property->managers()->attach($manager);
+        $tenant->properties()->attach($property);
+
+        $this->actingAs($manager)
+            ->post(route('buildings.notes.store', $building), ['body' => 'Toujours non autorisé'])
+            ->assertForbidden();
+
+        $this->actingAs($manager)
+            ->post(route('tenants.notes.store', $tenant), ['body' => 'Toujours non autorisé'])
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('notes', 0);
+
+        // Admin has no note access either, on any entity.
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->post(route('buildings.notes.store', $building), ['body' => 'Toujours non autorisé pour admin'])
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('notes', 0);
     }
 
-    public function test_only_the_author_or_admin_can_edit_or_delete_a_note(): void
+    public function test_only_the_author_can_edit_or_delete_a_note(): void
     {
         $author = User::factory()->create();
         $author->assignRole('gestionnaire');
@@ -821,15 +784,18 @@ class AdminBackOfficeTest extends TestCase
         $colleague->assignRole('gestionnaire');
         $admin = $this->admin();
 
-        $tenant = Tenant::create([
-            'civility' => Tenant::CIVILITY_MR,
-            'last_name' => 'Locataire',
-            'first_name' => 'Test',
-            'status' => Tenant::STATUS_ACTIVE,
+        $building = $this->createBuilding();
+        $property = Property::create([
+            'reference' => 'NOTE-AUTHOR-01',
+            'name' => 'Bien géré par l’auteur',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'status' => 'active',
         ]);
+        $property->managers()->attach($author);
 
         $this->actingAs($author)
-            ->post(route('tenants.notes.store', $tenant), ['body' => 'Note initiale'])
+            ->post(route('properties.notes.store', $property), ['body' => 'Note initiale'])
             ->assertRedirect();
 
         $note = Note::firstOrFail();
@@ -849,16 +815,22 @@ class AdminBackOfficeTest extends TestCase
         $note->refresh();
         $this->assertSame('Modifiée par l’auteur', $note->body);
 
+        // Admin no longer has any note access, including moderating someone else's note.
         $this->actingAs($admin)
+            ->delete(route('notes.destroy', $note))
+            ->assertForbidden();
+
+        $this->actingAs($author)
             ->delete(route('notes.destroy', $note))
             ->assertRedirect();
 
         $this->assertDatabaseMissing('notes', ['id' => $note->id]);
     }
 
-    public function test_notes_are_available_on_properties_and_property_rooms(): void
+    public function test_notes_are_available_on_properties_and_property_rooms_for_their_manager(): void
     {
-        $admin = $this->admin();
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
         $building = $this->createBuilding();
         $property = Property::create([
             'reference' => 'NOTE-PROP-01',
@@ -868,16 +840,17 @@ class AdminBackOfficeTest extends TestCase
             'is_shared_accommodation' => true,
             'status' => 'active',
         ]);
+        $property->managers()->attach($manager);
         $room = $property->rooms()->create([
             'name' => 'Chambre notée',
             'status' => 'active',
         ]);
 
-        $this->actingAs($admin)
+        $this->actingAs($manager)
             ->post(route('properties.notes.store', $property), ['body' => 'Note bien'])
             ->assertRedirect(route('properties.show', $property));
 
-        $this->actingAs($admin)
+        $this->actingAs($manager)
             ->post(route('property-rooms.notes.store', [$property, $room]), ['body' => 'Note pièce'])
             ->assertRedirect(route('property-rooms.show', [$property, $room]));
 
@@ -892,15 +865,22 @@ class AdminBackOfficeTest extends TestCase
             'body' => 'Note pièce',
         ]);
 
-        $this->actingAs($admin)
+        $this->actingAs($manager)
             ->get(route('properties.show', $property))
             ->assertOk()
             ->assertSee('Note bien');
 
-        $this->actingAs($admin)
+        $this->actingAs($manager)
             ->get(route('property-rooms.show', [$property, $room]))
             ->assertOk()
             ->assertSee('Note pièce');
+
+        // Admin has no note access at all, including viewing existing notes.
+        $admin = $this->admin();
+        $this->actingAs($admin)
+            ->get(route('properties.show', $property))
+            ->assertOk()
+            ->assertDontSee('Fil de notes');
     }
 
     public function test_tenant_can_be_linked_to_a_future_user_account(): void

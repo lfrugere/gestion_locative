@@ -75,10 +75,11 @@ class InvoiceController extends Controller
         return back()->with('success', 'La facture a été supprimée.');
     }
 
+    // Le rôle admin n'a plus accès aux factures, comme pour les médias et les notes
+    // (cf. docs/roles-permissions.md) : seul l'ownership (isManagedBy) autorise l'accès,
+    // ce qui exclut de facto l'admin puisqu'il n'est jamais rattaché comme gestionnaire.
     private function canManageInvoicesFor(Property $property): bool
     {
-        $user = auth()->user();
-
-        return $user->hasRole('admin') || $property->isManagedBy($user);
+        return $property->isManagedBy(auth()->user());
     }
 }

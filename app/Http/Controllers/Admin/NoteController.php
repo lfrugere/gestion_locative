@@ -13,14 +13,19 @@ use Illuminate\Http\Request;
 
 class NoteController extends Controller
 {
+    // Le rôle admin n'a plus accès au fil de notes, sur aucune entité (cf.
+    // docs/roles-permissions.md) : ces contrôles reposent uniquement sur l'ownership
+    // (isManagedBy), qui est par construction toujours faux pour un admin.
     public function storeBuilding(Request $request, Building $building): RedirectResponse
     {
+        abort_unless($building->isManagedBy(auth()->user()), 403);
+
         return $this->store($request, $building, 'buildings.show');
     }
 
     public function storeProperty(Request $request, Property $property): RedirectResponse
     {
-        abort_unless(auth()->user()->hasRole('admin') || $property->isManagedBy(auth()->user()), 403);
+        abort_unless($property->isManagedBy(auth()->user()), 403);
 
         return $this->store($request, $property, 'properties.show');
     }
@@ -28,12 +33,15 @@ class NoteController extends Controller
     public function storePropertyRoom(Request $request, Property $property, PropertyRoom $room): RedirectResponse
     {
         abort_unless($room->property_id === $property->id, 404);
+        abort_unless($property->isManagedBy(auth()->user()), 403);
 
         return $this->store($request, $room, 'property-rooms.show', [$property, $room]);
     }
 
     public function storeTenant(Request $request, Tenant $tenant): RedirectResponse
     {
+        abort_unless($tenant->isManagedBy(auth()->user()), 403);
+
         return $this->store($request, $tenant, 'tenants.show');
     }
 
@@ -84,6 +92,6 @@ class NoteController extends Controller
             return false;
         }
 
-        return $note->created_by === $user->id || $user->hasRole('admin');
+        return $note->created_by === $user->id;
     }
 }

@@ -31,10 +31,12 @@ class MediaControllerTest extends TestCase
     public function test_updating_a_media_type_via_http_moves_the_file(): void
     {
         $property = $this->createProperty();
+        $manager = $this->manager();
+        $property->managers()->attach($manager);
         $media = $this->createDocument($property, Media::TYPE_DIAGNOSTICS);
         $originalPath = $media->path;
 
-        $this->actingAs($this->admin())
+        $this->actingAs($manager)
             ->put(route('media.update', $media), [
                 'type' => Media::TYPE_INSURANCE,
                 'display_name' => 'Attestation assurance',
@@ -50,15 +52,39 @@ class MediaControllerTest extends TestCase
 
     public function test_update_rejects_a_type_not_allowed_for_the_owner(): void
     {
-        $building = $this->createBuilding();
-        $media = $this->createDocument($building, Media::TYPE_DIAGNOSTICS);
+        $property = $this->createProperty();
+        $manager = $this->manager();
+        $property->managers()->attach($manager);
+        $media = $this->createDocument($property, Media::TYPE_DIAGNOSTICS);
 
-        $this->actingAs($this->admin())
+        $this->actingAs($manager)
             ->put(route('media.update', $media), [
                 'type' => Media::TYPE_IDENTITY,
                 'display_name' => 'Pièce identité',
             ])
             ->assertSessionHasErrors('type');
+    }
+
+    public function test_admin_has_no_access_to_media_management_or_viewing(): void
+    {
+        $property = $this->createProperty();
+        $photo = $this->createPhoto($property);
+        $document = $this->createDocument($property, Media::TYPE_DIAGNOSTICS);
+
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('media.download', $photo))->assertForbidden();
+        $this->actingAs($admin)
+            ->put(route('media.update', $document), ['type' => Media::TYPE_INSURANCE, 'display_name' => 'x'])
+            ->assertForbidden();
+        $this->actingAs($admin)->post(route('media.primary', $photo))->assertForbidden();
+        $this->actingAs($admin)->delete(route('media.destroy', $photo))->assertForbidden();
+        $this->actingAs($admin)
+            ->post(route('properties.media.store', $property), [
+                'kind' => Media::KIND_PHOTO,
+                'file' => UploadedFile::fake()->create('a.jpg', 100, 'image/jpeg'),
+            ])
+            ->assertForbidden();
     }
 
     public function test_update_is_forbidden_for_a_manager_without_manage_permission_on_the_owner(): void
@@ -76,11 +102,13 @@ class MediaControllerTest extends TestCase
 
     public function test_set_primary_marks_a_photo_as_primary(): void
     {
-        $building = $this->createBuilding();
-        $this->createPhoto($building);
-        $second = $this->createPhoto($building);
+        $property = $this->createProperty();
+        $manager = $this->manager();
+        $property->managers()->attach($manager);
+        $this->createPhoto($property);
+        $second = $this->createPhoto($property);
 
-        $this->actingAs($this->admin())
+        $this->actingAs($manager)
             ->post(route('media.primary', $second))
             ->assertRedirect();
 
@@ -91,9 +119,11 @@ class MediaControllerTest extends TestCase
     public function test_set_primary_is_forbidden_for_a_non_photo_media(): void
     {
         $property = $this->createProperty();
+        $manager = $this->manager();
+        $property->managers()->attach($manager);
         $document = $this->createDocument($property, Media::TYPE_DIAGNOSTICS);
 
-        $this->actingAs($this->admin())
+        $this->actingAs($manager)
             ->post(route('media.primary', $document))
             ->assertForbidden();
     }
@@ -110,11 +140,13 @@ class MediaControllerTest extends TestCase
 
     public function test_destroy_promotes_another_photo_as_primary_via_http(): void
     {
-        $building = $this->createBuilding();
-        $primary = $this->createPhoto($building);
-        $other = $this->createPhoto($building);
+        $property = $this->createProperty();
+        $manager = $this->manager();
+        $property->managers()->attach($manager);
+        $primary = $this->createPhoto($property);
+        $other = $this->createPhoto($property);
 
-        $this->actingAs($this->admin())
+        $this->actingAs($manager)
             ->delete(route('media.destroy', $primary))
             ->assertRedirect();
 
@@ -156,22 +188,43 @@ class MediaControllerTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_download_is_allowed_for_a_manager_with_view_permission_even_without_manage_permission(): void
+    public function test_download_is_forbidden_for_a_manager_who_does_not_manage_a_property_in_the_building(): void
     {
         $building = $this->createBuilding();
         $media = $this->createPhoto($building);
 
         $this->actingAs($this->manager())
             ->get(route('media.download', $media))
+            ->assertForbidden();
+    }
+
+    public function test_download_is_allowed_for_a_manager_who_manages_a_property_in_the_building(): void
+    {
+        $building = $this->createBuilding();
+        $media = $this->createPhoto($building);
+        $property = Property::create([
+            'reference' => 'BIEN-MEDIA-BUILDING',
+            'name' => 'Bien du bâtiment',
+            'type' => Property::TYPE_APARTMENT,
+            'building_id' => $building->id,
+            'status' => 'active',
+        ]);
+        $manager = $this->manager();
+        $property->managers()->attach($manager);
+
+        $this->actingAs($manager)
+            ->get(route('media.download', $media))
             ->assertOk();
     }
 
     public function test_store_rejects_an_invalid_kind(): void
     {
-        $building = $this->createBuilding();
+        $property = $this->createProperty();
+        $manager = $this->manager();
+        $property->managers()->attach($manager);
 
-        $this->actingAs($this->admin())
-            ->post(route('buildings.media.store', $building), [
+        $this->actingAs($manager)
+            ->post(route('properties.media.store', $property), [
                 'kind' => 'video',
                 'file' => UploadedFile::fake()->create('a.jpg', 100, 'image/jpeg'),
             ])
@@ -180,15 +233,31 @@ class MediaControllerTest extends TestCase
 
     public function test_store_rejects_a_file_with_a_disallowed_mime_type(): void
     {
-        $building = $this->createBuilding();
+        $property = $this->createProperty();
+        $manager = $this->manager();
+        $property->managers()->attach($manager);
 
-        $this->actingAs($this->admin())
-            ->post(route('buildings.media.store', $building), [
+        $this->actingAs($manager)
+            ->post(route('properties.media.store', $property), [
                 'kind' => Media::KIND_DOCUMENT,
                 'type' => Media::TYPE_OTHER,
                 'file' => UploadedFile::fake()->create('malware.exe', 100, 'application/octet-stream'),
             ])
             ->assertSessionHasErrors('file');
+    }
+
+    public function test_building_media_routes_are_unreachable_for_anyone(): void
+    {
+        $building = $this->createBuilding();
+
+        // 'manage buildings' remains admin-only in the permission model, but the admin role
+        // no longer has any media access at all: uploading a building photo has no valid actor.
+        $this->actingAs($this->admin())
+            ->post(route('buildings.media.store', $building), [
+                'kind' => Media::KIND_PHOTO,
+                'file' => UploadedFile::fake()->create('a.jpg', 100, 'image/jpeg'),
+            ])
+            ->assertForbidden();
     }
 
     private function admin(): User

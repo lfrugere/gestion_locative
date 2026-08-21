@@ -34,10 +34,10 @@
                             <td>{{ $tenant->birth_date?->format('d/m/Y') ?? '—' }}</td>
                             <td><span class="status-pill status-{{ $tenant->status }}">{{ $tenant->statusLabel() }}</span></td>
                             <td class="actions">
-                                @can('manage tenants')
+                                @if (auth()->user()->hasRole('admin') || $tenant->isManagedBy(auth()->user()))
                                     <a class="icon-action" href="{{ route('tenants.edit', $tenant) }}" aria-label="Modifier {{ $tenant->fullName() }}" data-tooltip="Modifier" title="Modifier"><span aria-hidden="true">✎</span></a>
                                     <form method="POST" action="{{ route('tenants.destroy', $tenant) }}" onsubmit="return confirm('Supprimer ce locataire ?')">@csrf @method('DELETE')<button class="icon-action danger-action" type="submit" aria-label="Supprimer {{ $tenant->fullName() }}" data-tooltip="Supprimer" title="Supprimer"><span aria-hidden="true">×</span></button></form>
-                                @endcan
+                                @endif
                             </td>
                         </tr>
                     @endforeach

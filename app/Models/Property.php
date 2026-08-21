@@ -102,6 +102,11 @@ class Property extends Model
         return $this->belongsToMany(User::class, 'property_manager');
     }
 
+    public function tenants(): BelongsToMany
+    {
+        return $this->belongsToMany(Tenant::class, 'property_tenant');
+    }
+
     public function isManagedBy(User $user): bool
     {
         return $this->managers()->whereKey($user->id)->exists();

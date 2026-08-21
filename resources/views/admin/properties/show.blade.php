@@ -50,18 +50,18 @@
                 @endif
             </section>
 
-            @can('manage properties')
+            @if (auth()->user()->can('manage properties') || $isPropertyManager)
                 <section class="detail-panel">
                     <div class="panel-heading"><div><span class="panel-kicker">Rattachement</span><h2>Compte bancaire</h2></div><span class="panel-icon">🏦</span></div>
                     @if ($property->bankAccount)
-                        <a class="related-entity" href="{{ route('bank-accounts.show', $property->bankAccount) }}"><span class="entity-mark">B</span><span><strong>{{ $property->bankAccount->label }}</strong></span><span class="row-arrow">→</span></a>
+                        <a class="related-entity" href="{{ auth()->user()->hasRole('admin') ? route('bank-accounts.show', $property->bankAccount) : route('mes-comptes-bancaires.show', $property->bankAccount) }}"><span class="entity-mark">B</span><span><strong>{{ $property->bankAccount->label }}</strong></span><span class="row-arrow">→</span></a>
                     @else
                         <p class="empty compact">Aucun compte bancaire associé à ce bien.</p>
                     @endif
                 </section>
-            @endcan
+            @endif
 
-            @if (auth()->user()->can('manage invoices') && $isPropertyManager)
+            @if (! auth()->user()->hasRole('admin') && auth()->user()->can('manage invoices') && $isPropertyManager)
                 <section class="detail-panel associated-panel">
                     <div class="panel-heading"><div><span class="panel-kicker">Charges</span><h2>Factures</h2></div><span class="count-badge">{{ $property->invoices->count() }}</span></div>
 
@@ -94,21 +94,25 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                @foreach ($invoice->media as $file)
-                                                    <div style="display:flex; align-items:center; gap:4px;">
-                                                        <a href="{{ route('media.download', $file) }}">{{ $file->display_name }}</a>
-                                                        <form method="POST" action="{{ route('media.destroy', $file) }}" onsubmit="return confirm('Supprimer cette pièce jointe ?')">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button class="icon-action danger-action" type="submit" aria-label="Supprimer la pièce jointe" data-tooltip="Supprimer" title="Supprimer"><span aria-hidden="true">×</span></button>
-                                                        </form>
-                                                    </div>
-                                                @endforeach
-                                                <form method="POST" action="{{ route('properties.invoices.media.store', [$property, $invoice]) }}" enctype="multipart/form-data" style="margin-top:4px;">
-                                                    @csrf
-                                                    <input type="file" name="file" required style="max-width: 160px;">
-                                                    <button class="button secondary" type="submit">Ajouter</button>
-                                                </form>
+                                                @unless (auth()->user()->hasRole('admin'))
+                                                    @foreach ($invoice->media as $file)
+                                                        <div style="display:flex; align-items:center; gap:4px;">
+                                                            <a href="{{ route('media.download', $file) }}">{{ $file->display_name }}</a>
+                                                            <form method="POST" action="{{ route('media.destroy', $file) }}" onsubmit="return confirm('Supprimer cette pièce jointe ?')">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button class="icon-action danger-action" type="submit" aria-label="Supprimer la pièce jointe" data-tooltip="Supprimer" title="Supprimer"><span aria-hidden="true">×</span></button>
+                                                            </form>
+                                                        </div>
+                                                    @endforeach
+                                                    <form method="POST" action="{{ route('properties.invoices.media.store', [$property, $invoice]) }}" enctype="multipart/form-data" style="margin-top:4px;">
+                                                        @csrf
+                                                        <input type="file" name="file" required style="max-width: 160px;">
+                                                        <button class="button secondary" type="submit">Ajouter</button>
+                                                    </form>
+                                                @else
+                                                    <span class="hint">—</span>
+                                                @endunless
                                             </td>
                                             <td class="actions">
                                                 <form method="POST" action="{{ route('properties.invoices.destroy', [$property, $invoice]) }}" onsubmit="return confirm('Supprimer cette facture ?')">
@@ -191,9 +195,11 @@
                 </section>
             @endif
 
-            @include('admin._media', ['media' => $property->media, 'mediable' => $property, 'managePermission' => 'manage properties', 'canManageMedia' => $isPropertyManager, 'uploadRoute' => route('properties.media.store', $property)])
+            @unless (auth()->user()->hasRole('admin'))
+                @include('admin._media', ['media' => $property->media, 'mediable' => $property, 'managePermission' => 'manage properties', 'canManageMedia' => $isPropertyManager, 'uploadRoute' => route('properties.media.store', $property)])
 
-            @include('admin._notes', ['notes' => $property->notes, 'managePermission' => 'manage notes', 'canManageNotes' => $isPropertyManager, 'storeRoute' => route('properties.notes.store', $property)])
+                @include('admin._notes', ['notes' => $property->notes, 'managePermission' => 'manage notes', 'canManageNotes' => $isPropertyManager, 'storeRoute' => route('properties.notes.store', $property)])
+            @endunless
 
             @can('manage properties')
                 <form class="danger-zone" method="POST" action="{{ route('properties.destroy', $property) }}" onsubmit="return confirm('Supprimer ce bien ?')">

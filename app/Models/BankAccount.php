@@ -33,4 +33,14 @@ class BankAccount extends Model
     {
         return $this->hasMany(BankReconciliation::class)->latest('statement_date');
     }
+
+    public function properties(): HasMany
+    {
+        return $this->hasMany(Property::class);
+    }
+
+    public function isManagedBy(User $user): bool
+    {
+        return $this->properties()->whereHas('managers', fn ($query) => $query->whereKey($user->id))->exists();
+    }
 }

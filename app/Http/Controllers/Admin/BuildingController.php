@@ -16,8 +16,11 @@ class BuildingController extends Controller
 {
     public function index(): View
     {
+        $user = auth()->user();
+
         return view('admin.buildings.index', [
             'buildings' => Building::with(['address', 'media' => fn ($query) => $query->where('kind', 'photo')->where('is_primary', true)])
+                ->when(! $user->hasRole('admin'), fn ($query) => $query->whereHas('properties', fn ($q) => $q->whereHas('managers', fn ($q2) => $q2->whereKey($user->id))))
                 ->withCount('properties')
                 ->orderBy('name')
                 ->get(),
@@ -31,8 +34,13 @@ class BuildingController extends Controller
 
     public function show(Building $building): View
     {
+        $user = auth()->user();
+
+        abort_unless($user->hasRole('admin') || $building->isManagedBy($user), 403);
+
         return view('admin.buildings.show', [
             'building' => $building->load(['address', 'properties', 'media.tags', 'notes.author', 'notes.editor']),
+            'isBuildingManager' => $user->hasRole('admin') || $building->isManagedBy($user),
         ]);
     }
 
