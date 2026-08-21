@@ -11,7 +11,7 @@
             a { color: #176b66; text-decoration: none; }
             a:hover { text-decoration: underline; }
             .admin-shell { display: grid; min-height: 100vh; grid-template-columns: 230px 1fr; }
-            .admin-nav { padding: 24px 18px; color: #dce8ee; background: #183b56; }
+            .admin-nav { display: flex; flex-direction: column; padding: 24px 18px; color: #dce8ee; background: #183b56; }
             .admin-brand { display: block; margin: 0 10px 32px; color: #fff; font-weight: 750; }
             .admin-nav a { display: block; margin: 4px 0; padding: 10px 12px; border-radius: 8px; color: #c9d6df; }
             .admin-nav a:hover { color: #fff; background: rgba(255, 255, 255, .1); text-decoration: none; }
@@ -232,7 +232,7 @@
             @media (max-width: 980px) { .detail-grid { grid-template-columns: 1fr; } .detail-aside { position: static; grid-template-columns: minmax(0, 1fr) minmax(250px, 330px); } .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
             @media (max-width: 720px) { .detail-hero { flex-wrap: wrap; margin: -28px -18px 28px; padding: 34px 18px 30px; } .detail-hero-photo { flex-basis: 88px; width: 88px; height: 88px; border-radius: 13px; } .detail-hero-actions { justify-content: flex-start; } .detail-grid { gap: 18px; } .detail-panel, .media-card { padding: 20px; } .detail-aside { grid-template-columns: 1fr; } .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .metric:nth-child(2) { border-right: 0; } .metric:nth-child(-n+2) { border-bottom: 1px solid #edf1f5; } .associated-row { grid-template-columns: auto minmax(0, 1fr) auto; } .associated-row .status-pill { display: none; } .danger-zone { align-items: flex-start; flex-direction: column; } .photo-viewer-content { grid-template-columns: 36px minmax(0, 1fr) 36px; gap: 6px; } .photo-viewer-navigation { width: 36px; height: 36px; } .dashboard-header { align-items: stretch; } .dashboard-actions { justify-content: flex-start; } .dashboard-metrics, .dashboard-grid { grid-template-columns: 1fr; } .dashboard-metric { min-height: 104px; } .check-row { grid-template-columns: auto minmax(0, 1fr); } .check-row code { justify-self: start; grid-column: 2; text-align: left; } }
             .hint { margin: 6px 0 0; color: #667085; font-size: .82rem; }
-            .admin-footer { margin-top: 34px; padding-top: 18px; border-top: 1px solid #eaecf0; color: #98a2b3; font-size: .78rem; }
+            .admin-nav-version { margin-top: auto; padding-top: 18px; color: #7c8ea3; font-size: .74rem; line-height: 1.5; }
             @media (max-width: 720px) { .admin-shell { display: block; } .admin-nav { padding: 16px; } .admin-brand { margin-bottom: 12px; } .admin-nav a { display: inline-block; } .admin-nav form { display: inline-block; margin: 0; } .admin-main { padding: 28px 18px; } .form-grid { grid-template-columns: 1fr; } .form-field.full { grid-column: auto; } .admin-header { align-items: stretch; flex-direction: column; } }
         </style>
     </head>
@@ -257,23 +257,25 @@
                 @endphp
 
                 <nav class="nav-group" aria-label="Menus">
-                    <a class="nav-group-header {{ $gestionLocativeActive ? 'active' : '' }}" href="{{ route('gestion-locative') }}">
-                        <span>Gestion Locative</span>
-                        <span class="chevron">{{ $gestionLocativeActive ? '⌃' : '⌄' }}</span>
-                    </a>
-                    @if ($gestionLocativeActive)
-                        <div class="nav-submenu">
-                            @can('view properties')
-                                <a href="{{ route('mes-biens') }}">Mes biens</a>
-                            @endcan
-                            @can('view tenants')
-                                <a href="{{ route('mes-locataires') }}">Mes locataires</a>
-                            @endcan
-                            <a href="{{ route('mes-contrats') }}">Mes contrats</a>
-                        </div>
-                    @endif
+                    @hasanyrole('gestionnaire|locataire')
+                        <a class="nav-group-header {{ $gestionLocativeActive ? 'active' : '' }}" href="{{ route('gestion-locative') }}">
+                            <span>Gestion Locative</span>
+                            <span class="chevron">{{ $gestionLocativeActive ? '⌃' : '⌄' }}</span>
+                        </a>
+                        @if ($gestionLocativeActive)
+                            <div class="nav-submenu">
+                                @can('view properties')
+                                    <a href="{{ route('mes-biens') }}">Mes biens</a>
+                                @endcan
+                                @can('view tenants')
+                                    <a href="{{ route('mes-locataires') }}">Mes locataires</a>
+                                @endcan
+                                <a href="{{ route('mes-contrats') }}">Mes contrats</a>
+                            </div>
+                        @endif
+                    @endhasanyrole
 
-                    @canany(['view buildings', 'view properties', 'view tenants', 'view bank accounts'])
+                    @hasrole('admin')
                         <a class="nav-group-header {{ $adminLocativeActive ? 'active' : '' }}" href="{{ route('admin-locative') }}">
                             <span>Admin Locative</span>
                             <span class="chevron">{{ $adminLocativeActive ? '⌃' : '⌄' }}</span>
@@ -294,7 +296,7 @@
                                 @endcan
                             </div>
                         @endif
-                    @endcanany
+                    @endhasrole
 
                     @canany(['manage system', 'manage users'])
                     <a class="nav-group-header {{ $administrationsActive ? 'active' : '' }}" href="{{ route('administrations') }}">
@@ -317,6 +319,13 @@
                     @csrf
                     <button type="submit">Se déconnecter</button>
                 </form>
+
+                <div class="admin-nav-version">
+                    {{ config('app.name') }} v{{ config('app.version') }}
+                    @if (config('app.build_date'))
+                        <br>{{ config('app.build_date') }}
+                    @endif
+                </div>
             </aside>
 
             <main class="admin-main">
@@ -337,10 +346,6 @@
                     </div>
                 @endif
                 @yield('content')
-
-                <footer class="admin-footer">
-                    {{ config('app.name') }} v{{ config('app.version') }}
-                </footer>
             </main>
         </div>
     </body>

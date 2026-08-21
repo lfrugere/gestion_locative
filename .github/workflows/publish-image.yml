@@ -39,6 +39,7 @@ jobs:
             tags="$image:$version"
           fi
           echo "value=$version" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
           {
             echo "tags<<EOF"
             echo "$tags"
@@ -59,4 +60,5 @@ jobs:
           push: true
           build-args: |
             APP_VERSION=${{ steps.version.outputs.value }}
+            APP_BUILD_DATE=${{ steps.version.outputs.build_date }}
           tags: ${{ steps.version.outputs.tags }}
