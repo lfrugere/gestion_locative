@@ -39,7 +39,7 @@ Les chambres de colocation, baux, loyers et parcours des locataires seront ajout
 - Dans Docker, Compose monte ce fichier précisément dans /var/www/html/database/database.sqlite. Il ne faut pas remplacer ce montage par un volume Docker pour la base.
 - Les médias sont conservés dans le volume Docker storage_data ; ils ne sont pas publiés via public/storage.
 - Le workflow `.github/workflows/publish-image.yml` publie `ghcr.io/lfrugere/gestion_locative:latest` et un tag égal au SHA complet du commit. L’image ne contient ni fichier `.env`, ni base SQLite, ni médias ; Compose fournit ces données au démarrage.
-- L’entrypoint Docker exécute `php artisan migrate --force`, puis `php artisan db:seed --force`, avant Apache. Le seeder est idempotent : les rôles et permissions sont retrouvés ou créés, et le compte administrateur existant par e-mail est mis à jour depuis `ADMIN_NAME` et `ADMIN_PASSWORD`.
+- L’entrypoint Docker exécute `php artisan migrate --force`, puis `php artisan db:seed --force`, avant Apache. Le seeder est idempotent : les rôles et permissions sont retrouvés ou créés. Le compte administrateur (`ADMIN_NAME` / `ADMIN_EMAIL` / `ADMIN_PASSWORD`) et le compte gestionnaire (`MANAGER_NAME` / `MANAGER_EMAIL` / `MANAGER_PASSWORD`) sont chacun mis à jour ou créés indépendamment, avec uniquement leur propre rôle ; ces deux jeux de variables sont optionnels et indépendants l’un de l’autre.
 - Les fichiers peuvent peser jusqu’à 20 Mo. PHP doit avoir upload_max_filesize = 20M et post_max_size = 24M ; le Dockerfile les applique déjà.
 - La page /admin/configuration, réservée à l’administrateur, vérifie les limites PHP, les extensions requises par Laravel et SQLite, les répertoires storage d’archivage et de travail, le fuseau et la langue. Elle est une checklist de configuration, pas une page de métriques d’exploitation.
 
@@ -95,11 +95,13 @@ L’authentification utilise Laravel Fortify. L’inscription publique est désa
 
 | Rôle | Droits actuels |
 |---|---|
-| admin | Accès au back-office et gestion complète des immeubles, biens et locataires |
-| gestionnaire | Accès et consultation des immeubles et biens ; gestion complète des locataires |
+| admin | Accès au back-office et gestion complète des immeubles, biens, factures et locataires |
+| gestionnaire | Consultation des immeubles, biens et locataires ; gestion des factures, photos, pièces jointes et notes limitée aux biens dont il est explicitement gestionnaire |
 | locataire | Rôle réservé aux évolutions futures |
 
-Les permissions Spatie sont appliquées à deux niveaux : middleware de route et directives Blade @can. Les deux doivent rester alignés. Les médias suivent le droit de leur propriétaire : un fichier d’immeuble requiert le droit sur les immeubles, un fichier de bien celui sur les biens et un fichier de locataire celui sur les locataires. Les notes suivent la même règle pour être ajoutées ; les modifier ou les supprimer est en plus réservé à leur auteur ou au rôle admin, même pour un utilisateur qui dispose du droit de gérer l’entité porteuse.
+Le détail exhaustif par entité (qui peut créer, modifier, supprimer, et les restrictions de propriété sur les biens) est tenu à jour dans [roles-permissions.md](roles-permissions.md). Toute évolution des droits doit être répercutée dans ce document, dans le seeder et dans un test fonctionnel.
+
+Les permissions Spatie sont appliquées à deux niveaux : middleware de route et directives Blade @can. Les deux doivent rester alignés. Les médias suivent le droit de leur propriétaire : un fichier d’immeuble requiert le droit sur les immeubles, un fichier de bien celui sur les biens et un fichier de locataire celui sur les locataires. Les notes suivent la même règle pour être ajoutées ; les modifier ou les supprimer est en plus réservé à leur auteur ou au rôle admin, même pour un utilisateur qui dispose du droit de gérer l’entité porteuse. Sur les biens, l’ajout de factures, de médias et de notes est en outre restreint aux gestionnaires explicitement rattachés au bien (`Property::isManagedBy`), même si la permission Spatie sous-jacente est accordée plus largement au rôle.
 
 La page de configuration requiert la permission manage system, attribuée au seul rôle admin.
 

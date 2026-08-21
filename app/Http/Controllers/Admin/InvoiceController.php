@@ -16,6 +16,8 @@ class InvoiceController extends Controller
 {
     public function store(Request $request, Property $property, MediaManager $manager): RedirectResponse
     {
+        abort_unless($this->canManageInvoicesFor($property), 403);
+
         $validated = $request->validate([
             'supplier' => ['nullable', 'string', 'max:255'],
             'number' => ['nullable', 'string', 'max:100'],
@@ -53,6 +55,9 @@ class InvoiceController extends Controller
 
     public function destroy(Property $property, Invoice $invoice): RedirectResponse
     {
+        abort_unless($invoice->property_id === $property->id, 404);
+        abort_unless($this->canManageInvoicesFor($property), 403);
+
         $transaction = $invoice->bankTransaction;
 
         if ($transaction?->isLocked()) {
@@ -68,5 +73,12 @@ class InvoiceController extends Controller
         });
 
         return back()->with('success', 'La facture a été supprimée.');
+    }
+
+    private function canManageInvoicesFor(Property $property): bool
+    {
+        $user = auth()->user();
+
+        return $user->hasRole('admin') || $property->isManagedBy($user);
     }
 }

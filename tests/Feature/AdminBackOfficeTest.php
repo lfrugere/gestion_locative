@@ -509,6 +509,62 @@ class AdminBackOfficeTest extends TestCase
         $this->assertDatabaseHas('media', ['id' => $secondPhoto->id, 'is_primary' => true]);
     }
 
+    public function test_manager_can_manage_media_and_notes_only_on_a_property_they_manage(): void
+    {
+        $managedProperty = Property::create([
+            'reference' => 'MEDIA-MANAGED-01',
+            'name' => 'Bien géré',
+            'type' => Property::TYPE_HOUSE,
+            'status' => 'active',
+        ]);
+        $otherProperty = Property::create([
+            'reference' => 'MEDIA-OTHER-01',
+            'name' => 'Bien non géré',
+            'type' => Property::TYPE_HOUSE,
+            'status' => 'active',
+        ]);
+
+        $manager = User::factory()->create();
+        $manager->assignRole('gestionnaire');
+        $managedProperty->managers()->attach($manager);
+
+        $this->actingAs($manager)
+            ->post(route('properties.media.store', $managedProperty), [
+                'kind' => Media::KIND_PHOTO,
+                'file' => UploadedFile::fake()->create('facade.jpg', 100, 'image/jpeg'),
+            ])
+            ->assertRedirect(route('properties.show', $managedProperty));
+
+        $photo = Media::firstOrFail();
+
+        $this->actingAs($manager)
+            ->delete(route('media.destroy', $photo))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('media', ['id' => $photo->id]);
+
+        $this->actingAs($manager)
+            ->post(route('properties.notes.store', $managedProperty), ['body' => 'Note autorisée'])
+            ->assertRedirect(route('properties.show', $managedProperty));
+
+        $this->assertDatabaseHas('notes', [
+            'notable_type' => Property::class,
+            'notable_id' => $managedProperty->id,
+            'body' => 'Note autorisée',
+        ]);
+
+        $this->actingAs($manager)
+            ->post(route('properties.media.store', $otherProperty), [
+                'kind' => Media::KIND_PHOTO,
+                'file' => UploadedFile::fake()->create('autre.jpg', 100, 'image/jpeg'),
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($manager)
+            ->post(route('properties.notes.store', $otherProperty), ['body' => 'Non autorisée'])
+            ->assertForbidden();
+    }
+
     public function test_media_upload_is_limited_to_twenty_megabytes_with_a_clear_error_message(): void
     {
         $admin = $this->admin();
@@ -926,6 +982,11 @@ class AdminBackOfficeTest extends TestCase
         $this->actingAs($manager)
             ->get(route('mes-biens.show', $otherProperty))
             ->assertForbidden();
+
+        $this->actingAs($manager)
+            ->get(route('mes-biens.show', $ownProperty))
+            ->assertSee('Ajouter une pièce jointe')
+            ->assertSee('Ajouter une note');
     }
 
     public function test_locataire_can_only_reach_mes_contrats(): void

@@ -20,6 +20,8 @@ class NoteController extends Controller
 
     public function storeProperty(Request $request, Property $property): RedirectResponse
     {
+        abort_unless(auth()->user()->hasRole('admin') || $property->isManagedBy(auth()->user()), 403);
+
         return $this->store($request, $property, 'properties.show');
     }
 

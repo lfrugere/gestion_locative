@@ -2,6 +2,7 @@
 @php($documents = $media->where('kind', \App\Models\Media::KIND_DOCUMENT))
 @php($mediaTypes = \App\Models\Media::documentTypesFor($mediable))
 @php($singlePhoto = $singlePhoto ?? false)
+@php($canManageMedia = $canManageMedia ?? auth()->user()->can($managePermission))
 
 <section class="card media-card">
     <div class="media-card-header">
@@ -9,14 +10,14 @@
             <p class="panel-kicker">Médias</p>
             <h2>{{ $singlePhoto ? 'Photo d’identité et pièces jointes' : 'Photos et pièces jointes' }}</h2>
         </div>
-        @can($managePermission)
+        @if ($canManageMedia)
             <div class="media-card-actions">
                 @if (! $singlePhoto || $photos->isEmpty())
                     <button class="button secondary" type="button" data-dialog-open="photo-upload-dialog">{{ $singlePhoto ? 'Ajouter une photo d’identité' : 'Ajouter une photo' }}</button>
                 @endif
                 <button class="button" type="button" data-dialog-open="document-upload-dialog">Ajouter une pièce jointe</button>
             </div>
-        @endcan
+        @endif
     </div>
 
     @if ($documents->isNotEmpty())
@@ -31,7 +32,7 @@
                     @if ($document->tags->isNotEmpty())
                         <span class="tags">{{ $document->tags->pluck('name')->join(', ') }}</span>
                     @endif
-                    @can($managePermission)
+                    @if ($canManageMedia)
                         <div class="attachment-actions">
                             <button class="text-action" type="button" data-dialog-open="document-edit-dialog-{{ $document->id }}">Modifier</button>
                             <form method="POST" action="{{ route('media.destroy', $document) }}" onsubmit="return confirm('Supprimer cette pièce jointe ?')">
@@ -40,10 +41,10 @@
                                 <button class="text-action danger-text-action" type="submit">Supprimer</button>
                             </form>
                         </div>
-                    @endcan
+                    @endif
                 </article>
 
-                @can($managePermission)
+                @if ($canManageMedia)
                     <dialog id="document-edit-dialog-{{ $document->id }}" class="modal-dialog" aria-labelledby="document-edit-title-{{ $document->id }}">
                         <form method="dialog" class="modal-close-form"><button type="submit" aria-label="Fermer">×</button></form>
                         <div class="modal-content">
@@ -59,7 +60,7 @@
                             </form>
                         </div>
                     </dialog>
-                @endcan
+                @endif
             @endforeach
         </div>
     @endif
@@ -75,7 +76,7 @@
                     </button>
                     <div class="photo-item-content">
                         @if ($singlePhoto)<span class="photo-badge">Photo d’identité</span>@elseif ($photo->is_primary)<span class="photo-badge">Photo principale</span>@endif
-                        @can($managePermission)
+                        @if ($canManageMedia)
                             <div class="actions photo-actions">
                                 @unless($singlePhoto || $photo->is_primary)
                                     <form method="POST" action="{{ route('media.primary', $photo) }}">
@@ -89,7 +90,7 @@
                                     <button class="text-action danger-text-action" type="submit">Supprimer</button>
                                 </form>
                             </div>
-                        @endcan
+                        @endif
                     </div>
                 </article>
             @endforeach
@@ -115,7 +116,7 @@
     </dialog>
 @endif
 
-@can($managePermission)
+@if ($canManageMedia)
     <dialog id="photo-upload-dialog" class="modal-dialog" aria-labelledby="photo-upload-title">
         <form method="dialog" class="modal-close-form"><button type="submit" aria-label="Fermer">×</button></form>
         <div class="modal-content">
@@ -149,7 +150,7 @@
             </form>
         </div>
     </dialog>
-@endcan
+@endif
 
 <script>
     const openDialog = (dialog) => {
@@ -210,11 +211,11 @@
         });
     }
 
-    @can($managePermission)
+    @if ($canManageMedia)
         @if ($errors->has('file') && old('kind') === \App\Models\Media::KIND_PHOTO)
             openDialog(document.getElementById('photo-upload-dialog'));
         @elseif ($errors->has('file') && old('kind') === \App\Models\Media::KIND_DOCUMENT)
             openDialog(document.getElementById('document-upload-dialog'));
         @endif
-    @endcan
+    @endif
 </script>

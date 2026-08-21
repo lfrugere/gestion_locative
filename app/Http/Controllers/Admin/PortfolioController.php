@@ -24,7 +24,7 @@ class PortfolioController extends Controller
         $user = auth()->user();
 
         abort_unless(
-            $user->hasRole('admin') || $property->managers()->whereKey($user->id)->exists(),
+            $user->hasRole('admin') || $property->isManagedBy($user),
             403,
         );
 

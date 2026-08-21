@@ -25,6 +25,8 @@ class MediaController extends Controller
 
     public function storeProperty(Request $request, Property $property, MediaManager $manager): RedirectResponse
     {
+        abort_unless(auth()->user()->hasRole('admin') || $property->isManagedBy(auth()->user()), 403);
+
         return $this->store($request, $property, $manager, 'properties.show');
     }
 
@@ -50,6 +52,7 @@ class MediaController extends Controller
     public function storeInvoice(Request $request, Property $property, Invoice $invoice, MediaManager $manager): RedirectResponse
     {
         abort_unless($invoice->property_id === $property->id, 404);
+        abort_unless(auth()->user()->hasRole('admin') || $property->isManagedBy(auth()->user()), 403);
 
         $validated = $request->validate([
             'file' => ['required', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx'],
@@ -134,7 +137,7 @@ class MediaController extends Controller
             Property::class => auth()->user()->can('view properties'),
             PropertyRoom::class => auth()->user()->can('view properties'),
             Tenant::class => auth()->user()->can('view tenants'),
-            Invoice::class => auth()->user()->can('manage invoices'),
+            Invoice::class => $this->canManageInvoice($media),
             default => false,
         };
     }
@@ -143,11 +146,31 @@ class MediaController extends Controller
     {
         return match ($media->mediable_type) {
             Building::class => auth()->user()->can('manage buildings'),
-            Property::class => auth()->user()->can('manage properties'),
+            Property::class => $this->canManageProperty($media->mediable),
             PropertyRoom::class => auth()->user()->can('manage properties'),
             Tenant::class => auth()->user()->can('manage tenants'),
-            Invoice::class => auth()->user()->can('manage invoices'),
+            Invoice::class => $this->canManageInvoice($media),
             default => false,
         };
+    }
+
+    private function canManageProperty(Property $property): bool
+    {
+        if (! auth()->user()->can('view properties')) {
+            return false;
+        }
+
+        return auth()->user()->hasRole('admin') || $property->isManagedBy(auth()->user());
+    }
+
+    private function canManageInvoice(Media $media): bool
+    {
+        if (! auth()->user()->can('manage invoices')) {
+            return false;
+        }
+
+        $property = $media->mediable->property;
+
+        return auth()->user()->hasRole('admin') || $property->isManagedBy(auth()->user());
     }
 }
