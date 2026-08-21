@@ -1,9 +1,8 @@
 name: Publier l'image Docker
 
 on:
-  push:
-    branches:
-      - master
+  release:
+    types: [published]
   workflow_dispatch:
 
 env:
@@ -27,6 +26,25 @@ jobs:
       - name: Récupérer le code
         uses: actions/checkout@v6
 
+      - name: Déterminer la version et les tags
+        id: version
+        run: |
+          image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            version="${GITHUB_REF_NAME#v}"
+            tags="$image:$version
+          $image:latest"
+          else
+            version="dev-$(git rev-parse --short HEAD)"
+            tags="$image:$version"
+          fi
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+          {
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Connexion au registre GitHub
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
@@ -39,6 +57,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.value }}
+          tags: ${{ steps.version.outputs.tags }}
