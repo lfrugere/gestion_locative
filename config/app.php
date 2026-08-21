@@ -69,6 +69,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Build Date
+    |--------------------------------------------------------------------------
+    |
+    | Renseigné dans l'image Docker au build (voir .github/workflows/
+    | publish-image.yml et l'ARG APP_BUILD_DATE du Dockerfile). Vide en
+    | dehors d'une image publiée.
+    |
+    */
+
+    'build_date' => env('APP_BUILD_DATE'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
