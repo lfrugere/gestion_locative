@@ -1,6 +1,6 @@
 # Rôles et permissions
 
-Ce document recense, entité par entité, qui a le droit de faire quoi dans le back-office. Il complète [architecture.md](architecture.md) §5, qui décrit le mécanisme général (Spatie, middleware de route + directives Blade). Toute évolution des droits doit être répercutée ici, dans `database/seeders/DatabaseSeeder.php` et dans un test fonctionnel.
+Ce document recense, entité par entité, qui a le droit de faire quoi dans le back-office. Il traduit en droits techniques l'intention produit décrite dans [personas.md](personas.md), et complète [architecture.md](architecture.md) §5, qui décrit le mécanisme général (Spatie, middleware de route + directives Blade). Toute évolution des droits doit être répercutée ici, dans `database/seeders/DatabaseSeeder.php` et dans un test fonctionnel.
 
 ## Rôles
 
