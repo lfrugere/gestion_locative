@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
     'name',
     'type',
     'building_id',
+    'bank_account_id',
     'address_id',
     'floor',
     'surface_m2',
@@ -71,6 +72,11 @@ class Property extends Model
         return $this->belongsTo(Building::class);
     }
 
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(BankAccount::class);
+    }
+
     public function media(): MorphMany
     {
         return $this->morphMany(Media::class, 'mediable');
@@ -84,6 +90,11 @@ class Property extends Model
     public function rooms(): HasMany
     {
         return $this->hasMany(PropertyRoom::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class)->latest('date');
     }
 
     public function managers(): BelongsToMany

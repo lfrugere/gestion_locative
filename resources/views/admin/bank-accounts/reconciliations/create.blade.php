@@ -39,9 +39,7 @@
                             <input id="statement_balance" type="number" step="0.01" name="statement_balance" value="{{ old('statement_balance', $suggestedStatementBalance) }}" required>
                         </div>
                     </div>
-                    @if ($suggestedStatementBalance !== null)
-                        <p class="hint">Il s’agit du premier rapprochement de ce compte : nous avons pré-rempli le solde de clôture avec le solde actuel du compte ({{ number_format($suggestedStatementBalance, 2, ',', ' ') }} €). Corrigez-le si le solde de votre relevé bancaire diffère.</p>
-                    @endif
+                    <p class="hint">Nous avons pré-rempli le solde de clôture avec le solde actuel du compte ({{ number_format($suggestedStatementBalance, 2, ',', ' ') }} €). Corrigez-le si le solde de votre relevé bancaire diffère.</p>
                     <div class="form-actions"><button class="button" type="submit">Commencer le pointage</button></div>
                 </form>
             </section>
